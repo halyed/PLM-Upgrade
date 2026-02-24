@@ -1,0 +1,89 @@
+<div class="page-container">
+  <div class="action-bar">
+    <h2 style="margin:0">Items</h2>
+    <span class="spacer"></span>
+    <button mat-raised-button color="primary" (click)="openCreate()">
+      <mat-icon>add</mat-icon> New Item
+    </button>
+  </div>
+
+  @if (showForm()) {
+    <mat-card style="margin-bottom:24px;padding:16px">
+      <mat-card-title>{{ editingItem() ? 'Edit Item' : 'New Item' }}</mat-card-title>
+      <mat-card-content>
+        <form [formGroup]="form" (ngSubmit)="save()" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">
+          <mat-form-field appearance="outline">
+            <mat-label>Item Number</mat-label>
+            <input matInput formControlName="itemNumber">
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Name</mat-label>
+            <input matInput formControlName="name">
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Description</mat-label>
+            <input matInput formControlName="description">
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Lifecycle State</mat-label>
+            <mat-select formControlName="lifecycleState">
+              @for (s of lifecycleStates; track s) {
+                <mat-option [value]="s">{{ s }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+          <div style="grid-column:1/-1;display:flex;gap:8px;justify-content:flex-end">
+            <button mat-button type="button" (click)="showForm.set(false)">Cancel</button>
+            <button mat-raised-button color="primary" type="submit" [disabled]="form.invalid">Save</button>
+          </div>
+        </form>
+      </mat-card-content>
+    </mat-card>
+  }
+
+  @if (loading()) {
+    <div style="text-align:center;padding:32px"><mat-spinner diameter="40" style="margin:auto"></mat-spinner></div>
+  } @else {
+    <mat-card>
+      <table mat-table [dataSource]="items()" style="width:100%">
+        <ng-container matColumnDef="itemNumber">
+          <th mat-header-cell *matHeaderCellDef>Item #</th>
+          <td mat-cell *matCellDef="let row">{{ row.itemNumber }}</td>
+        </ng-container>
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef>Name</th>
+          <td mat-cell *matCellDef="let row">{{ row.name }}</td>
+        </ng-container>
+        <ng-container matColumnDef="lifecycleState">
+          <th mat-header-cell *matHeaderCellDef>State</th>
+          <td mat-cell *matCellDef="let row">
+            <span class="status-chip {{ row.lifecycleState }}">{{ row.lifecycleState }}</span>
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="updatedAt">
+          <th mat-header-cell *matHeaderCellDef>Updated</th>
+          <td mat-cell *matCellDef="let row">{{ row.updatedAt | date:'short' }}</td>
+        </ng-container>
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef></th>
+          <td mat-cell *matCellDef="let row">
+            <a mat-icon-button [routerLink]="['/items', row.id]" matTooltip="View">
+              <mat-icon>visibility</mat-icon>
+            </a>
+            <button mat-icon-button (click)="openEdit(row)" matTooltip="Edit">
+              <mat-icon>edit</mat-icon>
+            </button>
+            <button mat-icon-button color="warn" (click)="delete(row)" matTooltip="Delete">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </td>
+        </ng-container>
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+      </table>
+      @if (items().length === 0) {
+        <p style="text-align:center;padding:24px;color:#666">No items yet. Create one to get started.</p>
+      }
+    </mat-card>
+  }
+</div>

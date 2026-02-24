@@ -1,0 +1,54 @@
+#!/bin/sh
+# Maven Wrapper Script — downloads Maven if not already cached
+
+set -e
+
+# Locate project base directory (find pom.xml walking up)
+MAVEN_PROJECTBASEDIR="$(pwd)"
+while [ ! -f "$MAVEN_PROJECTBASEDIR/pom.xml" ] && [ "$MAVEN_PROJECTBASEDIR" != "/" ]; do
+  MAVEN_PROJECTBASEDIR="$(dirname "$MAVEN_PROJECTBASEDIR")"
+done
+
+if [ ! -f "$MAVEN_PROJECTBASEDIR/pom.xml" ]; then
+  echo "Error: Could not find pom.xml" >&2
+  exit 1
+fi
+
+WRAPPER_PROPERTIES="$MAVEN_PROJECTBASEDIR/.mvn/wrapper/maven-wrapper.properties"
+
+if [ -f "$WRAPPER_PROPERTIES" ]; then
+  DISTRIBUTION_URL=$(grep "^distributionUrl=" "$WRAPPER_PROPERTIES" | sed 's/^distributionUrl=//' | tr -d '\r')
+else
+  DISTRIBUTION_URL="https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.9.6/apache-maven-3.9.6-bin.zip"
+fi
+
+MAVEN_USER_HOME="${MAVEN_USER_HOME:-$HOME/.m2/wrapper}"
+MAVEN_DIST_NAME=$(basename "$DISTRIBUTION_URL" .zip)
+MAVEN_HOME="$MAVEN_USER_HOME/dists/$MAVEN_DIST_NAME"
+
+if [ ! -d "$MAVEN_HOME" ] || [ -z "$(ls -A "$MAVEN_HOME" 2>/dev/null)" ]; then
+  echo "Downloading: $DISTRIBUTION_URL"
+  mkdir -p "$MAVEN_HOME"
+  TMP_FILE="$MAVEN_HOME/_download.zip"
+
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsSL "$DISTRIBUTION_URL" -o "$TMP_FILE"
+  elif command -v wget >/dev/null 2>&1; then
+    wget -q "$DISTRIBUTION_URL" -O "$TMP_FILE"
+  else
+    echo "Error: curl or wget required" >&2
+    exit 1
+  fi
+
+  unzip -q "$TMP_FILE" -d "$MAVEN_HOME"
+  rm -f "$TMP_FILE"
+fi
+
+MAVEN_BIN=$(find "$MAVEN_HOME" -name "mvn" -not -name "*.cmd" -type f 2>/dev/null | head -1)
+
+if [ -z "$MAVEN_BIN" ]; then
+  echo "Error: mvn binary not found after download" >&2
+  exit 1
+fi
+
+exec "$MAVEN_BIN" -f "$MAVEN_PROJECTBASEDIR/pom.xml" "$@"

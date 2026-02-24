@@ -1,0 +1,61 @@
+@use '@angular/material' as mat;
+
+@include mat.core();
+
+$plm-primary: mat.define-palette(mat.$indigo-palette);
+$plm-accent: mat.define-palette(mat.$amber-palette, A200, A100, A400);
+$plm-warn: mat.define-palette(mat.$red-palette);
+
+$plm-theme: mat.define-light-theme((
+  color: (
+    primary: $plm-primary,
+    accent: $plm-accent,
+    warn: $plm-warn,
+  ),
+  typography: mat.define-typography-config(),
+  density: 0,
+));
+
+@include mat.all-component-themes($plm-theme);
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  font-family: Roboto, "Helvetica Neue", sans-serif;
+  background-color: #f5f5f5;
+}
+
+.page-container {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.spacer { flex: 1 1 auto; }
+
+.mat-elevation-z2 { box-shadow: 0 3px 6px rgba(0,0,0,.16); }
+
+.status-chip {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+
+  &.DRAFT, &.IN_WORK, &.OPEN { background: #e3f2fd; color: #1565c0; }
+  &.IN_REVIEW { background: #fff3e0; color: #e65100; }
+  &.RELEASED, &.APPROVED, &.CLOSED { background: #e8f5e9; color: #2e7d32; }
+  &.OBSOLETE, &.REJECTED { background: #fce4ec; color: #c62828; }
+}
+
+.action-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.full-width { width: 100%; }

@@ -1,0 +1,39 @@
+# ── Maven / Spring Boot ──────────────────────────────────────────────────────
+target/
+!.mvn/wrapper/maven-wrapper.jar
+*.class
+*.jar
+*.war
+*.ear
+hs_err_pid*
+
+# ── IDE ───────────────────────────────────────────────────────────────────────
+.idea/
+*.iml
+*.iws
+.project
+.classpath
+.settings/
+.vscode/
+
+# ── Node / Angular ───────────────────────────────────────────────────────────
+node_modules/
+frontend/dist/
+frontend/.angular/
+npm-debug.log*
+
+# ── Environment / Secrets ────────────────────────────────────────────────────
+.env
+.env.*
+*.env
+application-local.properties
+application-secret.properties
+
+# ── OS ───────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ── Logs ─────────────────────────────────────────────────────────────────────
+*.log
+logs/

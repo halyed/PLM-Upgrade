@@ -10,6 +10,7 @@ services:
       SPRING_DATASOURCE_USERNAME: plm_user
       SPRING_DATASOURCE_PASSWORD: plm_pass
       MINIO_ENDPOINT: http://minio:9000
+      MINIO_PUBLIC_ENDPOINT: http://localhost:9000
       MINIO_ACCESS_KEY: minioadmin
       MINIO_SECRET_KEY: minioadmin
     depends_on:

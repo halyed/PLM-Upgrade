@@ -3,12 +3,14 @@ package com.plm.controller;
 import com.plm.dto.DocumentResponse;
 import com.plm.service.DocumentService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.util.List;
 import java.util.Map;
@@ -47,5 +49,19 @@ public class DocumentController {
     @GetMapping("/documents/{id}/download-url")
     public ResponseEntity<Map<String, String>> getDownloadUrl(@PathVariable Long id) {
         return ResponseEntity.ok(Map.of("url", documentService.getDownloadUrl(id)));
+    }
+
+    @GetMapping("/documents/{id}/file")
+    public ResponseEntity<StreamingResponseBody> streamFile(@PathVariable Long id) {
+        String fileName = documentService.getFileName(id);
+        StreamingResponseBody body = out -> {
+            try (var in = documentService.streamFile(id)) {
+                in.transferTo(out);
+            }
+        };
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + fileName + "\"")
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .body(body);
     }
 }

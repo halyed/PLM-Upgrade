@@ -2,6 +2,7 @@ import {
   Component, OnInit, OnDestroy, ElementRef, ViewChild, AfterViewInit, signal
 }  from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatButtonModule } from '@angular/material/button';
@@ -86,12 +87,21 @@ export class ViewerComponent implements OnInit, AfterViewInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private documentService: DocumentService,
+    private http: HttpClient,
   ) {}
 
   ngOnInit() {
     const docId = Number(this.route.snapshot.paramMap.get('documentId'));
     this.documentService.getDownloadUrl(docId).subscribe({
-      next: ({ url }) => this.loadGltf(url),
+      next: ({ url }) => {
+        this.http.get(url, { responseType: 'blob' }).subscribe({
+          next: (blob) => {
+            const blobUrl = URL.createObjectURL(blob);
+            this.loadGltf(blobUrl);
+          },
+          error: () => this.error.set('Failed to download model file'),
+        });
+      },
       error: () => this.error.set('Failed to get file URL'),
     });
   }
@@ -142,11 +152,12 @@ export class ViewerComponent implements OnInit, AfterViewInit, OnDestroy {
     this.animate();
   }
 
-  private loadGltf(url: string) {
+  private loadGltf(blobUrl: string) {
     const loader = new GLTFLoader();
     loader.load(
-      url,
+      blobUrl,
       (gltf) => {
+        URL.revokeObjectURL(blobUrl);
         const model = gltf.scene;
         const box = new THREE.Box3().setFromObject(model);
         const center = box.getCenter(new THREE.Vector3());
@@ -173,6 +184,7 @@ export class ViewerComponent implements OnInit, AfterViewInit, OnDestroy {
       },
       undefined,
       (err) => {
+        URL.revokeObjectURL(blobUrl);
         console.error(err);
         this.error.set('Failed to load model. Ensure it is a valid glTF/GLB file.');
         this.loading.set(false);

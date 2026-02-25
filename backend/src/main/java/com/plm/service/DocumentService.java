@@ -14,9 +14,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.InputStream;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -93,22 +93,27 @@ public class DocumentService {
     }
 
     public String getDownloadUrl(Long id) {
+        findById(id); // validate exists
+        return "/api/documents/" + id + "/file";
+    }
+
+    public InputStream streamFile(Long id) {
         Document document = findById(id);
         try {
             String[] parts = document.getFilePath().split("/", 2);
             if (parts.length != 2) throw new com.plm.exception.BadRequestException("Invalid file path");
-            return minioClient.getPresignedObjectUrl(
-                io.minio.GetPresignedObjectUrlArgs.builder()
-                    .method(io.minio.http.Method.GET)
+            return minioClient.getObject(GetObjectArgs.builder()
                     .bucket(parts[0])
                     .object(parts[1])
-                    .expiry(1, TimeUnit.HOURS)
-                    .build()
-            );
+                    .build());
         } catch (Exception e) {
-            log.error("Failed to generate presigned URL", e);
-            throw new RuntimeException("Could not generate download URL: " + e.getMessage(), e);
+            log.error("Failed to stream file from MinIO", e);
+            throw new RuntimeException("Could not stream file: " + e.getMessage(), e);
         }
+    }
+
+    public String getFileName(Long id) {
+        return findById(id).getFileName();
     }
 
     private void ensureBucketExists(String bucket) throws Exception {

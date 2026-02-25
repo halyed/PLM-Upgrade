@@ -1,0 +1,71 @@
+<div class="viewer-toolbar">
+  <button mat-icon-button (click)="goBack()" matTooltip="Back to Items" style="color:white">
+    <mat-icon>arrow_back</mat-icon>
+  </button>
+  <mat-icon style="color:#90caf9">view_in_ar</mat-icon>
+  <span style="font-weight:500">3D Viewer</span>
+  <span class="spacer" style="flex:1"></span>
+  <button mat-stroked-button style="color:white;border-color:rgba(255,255,255,0.3)" (click)="resetCamera()">
+    <mat-icon>center_focus_strong</mat-icon> Reset
+  </button>
+  <button mat-stroked-button style="color:white;border-color:rgba(255,255,255,0.3)" (click)="toggleWireframe()">
+    <mat-icon>grid_on</mat-icon> Wireframe
+  </button>
+</div>
+
+<div class="viewer-body" style="position:relative">
+  <!-- Object tree -->
+  <div class="tree-panel">
+    <h3>Object Tree</h3>
+    @if (objectTree().length === 0 && !loading()) {
+      <p style="color:#666;font-size:12px;padding:8px">No objects</p>
+    }
+    @for (node of objectTree(); track node.name) {
+      <ng-container *ngTemplateOutlet="treeNodeTpl; context: { node: node, depth: 0 }"></ng-container>
+    }
+  </div>
+
+  <!-- Canvas -->
+  <canvas #canvas style="flex:1;display:block;outline:none"></canvas>
+
+  <!-- Loading overlay -->
+  @if (loading()) {
+    <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(26,26,46,0.85);color:white">
+      <mat-spinner diameter="48" color="accent"></mat-spinner>
+      <p style="margin-top:16px">Loading model...</p>
+    </div>
+  }
+
+  <!-- Error overlay -->
+  @if (error()) {
+    <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(26,26,46,0.9);color:white">
+      <mat-icon style="font-size:48px;width:48px;height:48px;color:#ef5350">error_outline</mat-icon>
+      <p style="margin-top:12px;max-width:320px;text-align:center">{{ error() }}</p>
+      <button mat-raised-button color="warn" (click)="goBack()">Go Back</button>
+    </div>
+  }
+</div>
+
+<!-- Recursive tree node template -->
+<ng-template #treeNodeTpl let-node="node" let-depth="depth">
+  <div
+    class="tree-node"
+    [class.selected]="selectedNode() === node"
+    [class.hidden]="!node.visible"
+    [style.padding-left.px]="8 + depth * 16"
+    (click)="selectNode(node)">
+    <mat-icon style="font-size:16px;width:16px;height:16px;color:#90caf9">
+      {{ node.children.length ? 'folder' : 'crop_square' }}
+    </mat-icon>
+    <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ node.name }}</span>
+    <mat-icon
+      style="font-size:16px;width:16px;height:16px;opacity:0.6"
+      (click)="toggleVisibility(node, )"
+      matTooltip="{{ node.visible ? 'Hide' : 'Show' }}">
+      {{ node.visible ? 'visibility' : 'visibility_off' }}
+    </mat-icon>
+  </div>
+  @for (child of node.children; track child.name) {
+    <ng-container *ngTemplateOutlet="treeNodeTpl; context: { node: child, depth: depth + 1 }"></ng-container>
+  }
+</ng-template>

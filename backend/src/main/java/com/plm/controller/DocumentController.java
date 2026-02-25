@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
@@ -41,5 +42,10 @@ public class DocumentController {
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         documentService.deleteDocument(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/documents/{id}/download-url")
+    public ResponseEntity<Map<String, String>> getDownloadUrl(@PathVariable Long id) {
+        return ResponseEntity.ok(Map.of("url", documentService.getDownloadUrl(id)));
     }
 }

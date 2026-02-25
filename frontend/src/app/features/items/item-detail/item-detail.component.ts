@@ -1,6 +1,6 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterModule } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -14,6 +14,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatChipsModule } from '@angular/material/chips';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { ItemService } from '../../../core/services/item.service';
 import { RevisionService } from '../../../core/services/revision.service';
 import { BomService } from '../../../core/services/bom.service';
@@ -27,10 +28,11 @@ import { Document } from '../../../core/models/document.model';
   selector: 'app-item-detail',
   standalone: true,
   imports: [
-    CommonModule, ReactiveFormsModule,
+    CommonModule, ReactiveFormsModule, RouterModule,
     MatCardModule, MatButtonModule, MatIconModule, MatTableModule,
     MatFormFieldModule, MatInputModule, MatSelectModule, MatExpansionModule,
     MatSnackBarModule, MatProgressSpinnerModule, MatDividerModule, MatChipsModule,
+    MatTooltipModule,
   ],
   templateUrl: './item-detail.component.html',
 })
@@ -146,6 +148,10 @@ export class ItemDetailComponent implements OnInit {
     this.documentService.delete(doc.id).subscribe({
       next: () => this.documents.update(list => list.filter(d => d.id !== doc.id)),
     });
+  }
+
+  isViewable(fileType: string): boolean {
+    return ['GLTF', 'GLB', 'STEP', 'STP'].includes((fileType || '').toUpperCase());
   }
 
   transitionLifecycle(state: LifecycleState) {

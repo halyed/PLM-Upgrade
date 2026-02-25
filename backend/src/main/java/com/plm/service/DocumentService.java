@@ -16,6 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -89,6 +90,25 @@ public class DocumentService {
             log.warn("Failed to delete file from MinIO: {}", e.getMessage());
         }
         documentRepository.delete(document);
+    }
+
+    public String getDownloadUrl(Long id) {
+        Document document = findById(id);
+        try {
+            String[] parts = document.getFilePath().split("/", 2);
+            if (parts.length != 2) throw new com.plm.exception.BadRequestException("Invalid file path");
+            return minioClient.getPresignedObjectUrl(
+                io.minio.GetPresignedObjectUrlArgs.builder()
+                    .method(io.minio.http.Method.GET)
+                    .bucket(parts[0])
+                    .object(parts[1])
+                    .expiry(1, TimeUnit.HOURS)
+                    .build()
+            );
+        } catch (Exception e) {
+            log.error("Failed to generate presigned URL", e);
+            throw new RuntimeException("Could not generate download URL: " + e.getMessage(), e);
+        }
     }
 
     private void ensureBucketExists(String bucket) throws Exception {

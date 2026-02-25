@@ -29,6 +29,11 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/change-requests/cr-list/cr-list.component').then(m => m.CrListComponent),
       },
+      {
+        path: 'viewer/:documentId',
+        loadComponent: () =>
+          import('./features/viewer/viewer.component').then(m => m.ViewerComponent),
+      },
     ],
   },
   { path: '**', redirectTo: 'items' },

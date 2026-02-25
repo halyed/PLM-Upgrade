@@ -17,4 +17,7 @@ export class DocumentService {
   delete(id: number) {
     return this.http.delete<void>(`/api/documents/${id}`);
   }
+  getDownloadUrl(id: number) {
+    return this.http.get<{ url: string }>(`/api/documents/${id}/download-url`);
+  }
 }

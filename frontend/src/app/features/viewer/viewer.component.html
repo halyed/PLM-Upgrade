@@ -60,7 +60,7 @@
     <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ node.name }}</span>
     <mat-icon
       style="font-size:16px;width:16px;height:16px;opacity:0.6"
-      (click)="toggleVisibility(node, )"
+      (click)="toggleVisibility(node, $event)"
       matTooltip="{{ node.visible ? 'Hide' : 'Show' }}">
       {{ node.visible ? 'visibility' : 'visibility_off' }}
     </mat-icon>

@@ -31,5 +31,6 @@ public class User {
     @Builder.Default
     private UserRole role = UserRole.ENGINEER;
 
+    @Builder.Default
     private boolean enabled = true;
 }

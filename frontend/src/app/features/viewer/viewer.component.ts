@@ -135,7 +135,7 @@ export class ViewerComponent implements OnInit, AfterViewInit, OnDestroy {
     this.scene.add(grid);
 
     this.resizeObserver = new ResizeObserver(() => this.onResize());
-    this.resizeObserver.observe(canvas.parentElement);
+    this.resizeObserver.observe(canvas.parentElement!);
     this.onResize();
 
     canvas.addEventListener('click', this.onCanvasClick.bind(this));

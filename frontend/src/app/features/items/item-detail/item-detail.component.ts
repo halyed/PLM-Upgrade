@@ -44,6 +44,10 @@ export class ItemDetailComponent implements OnInit {
   documents = signal<Document[]>([]);
   loading = signal(true);
 
+  // BOM dropdown data
+  bomItems = signal<Item[]>([]);
+  bomRevisions = signal<Revision[]>([]);
+
   revisionStatuses: RevisionStatus[] = ['IN_WORK', 'IN_REVIEW', 'RELEASED', 'OBSOLETE'];
   lifecycleStates: LifecycleState[] = ['DRAFT', 'IN_REVIEW', 'RELEASED', 'OBSOLETE'];
 
@@ -52,6 +56,7 @@ export class ItemDetailComponent implements OnInit {
   docCols = ['fileName', 'fileType', 'uploadedAt', 'actions'];
 
   bomForm = this.fb.group({
+    childItemId: ['', Validators.required],
     childRevisionId: ['', Validators.required],
     quantity: [1, [Validators.required, Validators.min(0.0001)]],
   });
@@ -76,6 +81,7 @@ export class ItemDetailComponent implements OnInit {
       this.revisions.set(revs);
       if (revs.length > 0) this.selectRevision(revs[revs.length - 1]);
     });
+    this.itemService.getAll().subscribe(items => this.bomItems.set(items));
   }
 
   selectRevision(rev: Revision) {
@@ -104,7 +110,15 @@ export class ItemDetailComponent implements OnInit {
         if (this.selectedRevision()?.id === updated.id) this.selectedRevision.set(updated);
         this.snack.open('Status updated', '', { duration: 2000 });
       },
+      error: (e) => this.snack.open(e.error?.message ?? 'Error', 'Close', { duration: 3000 }),
     });
+  }
+
+  onBomItemChange(itemId: number) {
+    this.bomRevisions.set([]);
+    this.bomForm.patchValue({ childRevisionId: '' });
+    if (!itemId) return;
+    this.revisionService.getByItem(itemId).subscribe(revs => this.bomRevisions.set(revs));
   }
 
   addBomChild() {
@@ -115,6 +129,7 @@ export class ItemDetailComponent implements OnInit {
       next: link => {
         this.bomChildren.update(list => [...list, link]);
         this.bomForm.reset({ quantity: 1 });
+        this.bomRevisions.set([]);
         this.snack.open('BOM child added', '', { duration: 2000 });
       },
       error: (e) => this.snack.open(e.error?.message ?? 'Error', 'Close', { duration: 3000 }),
@@ -126,6 +141,7 @@ export class ItemDetailComponent implements OnInit {
     if (!rev) return;
     this.bomService.removeChild(rev.id, link.childRevisionId).subscribe({
       next: () => this.bomChildren.update(list => list.filter(l => l.id !== link.id)),
+      error: (e) => this.snack.open(e.error?.message ?? 'Error removing BOM child', 'Close', { duration: 3000 }),
     });
   }
 
@@ -146,12 +162,31 @@ export class ItemDetailComponent implements OnInit {
 
   deleteDoc(doc: Document) {
     this.documentService.delete(doc.id).subscribe({
-      next: () => this.documents.update(list => list.filter(d => d.id !== doc.id)),
+      next: () => {
+        this.documents.update(list => list.filter(d => d.id !== doc.id));
+        this.snack.open('Deleted', '', { duration: 2000 });
+      },
+      error: (e) => this.snack.open(e.error?.message ?? 'Delete failed', 'Close', { duration: 3000 }),
     });
   }
 
-  isViewable(fileType: string): boolean {
-    return ['GLTF', 'GLB', 'STEP', 'STP'].includes((fileType || '').toUpperCase());
+  downloadDoc(doc: Document) {
+    this.documentService.downloadFile(doc.id).subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = doc.fileName;
+        a.click();
+        URL.revokeObjectURL(url);
+      },
+      error: () => this.snack.open('Download failed', 'Close', { duration: 3000 }),
+    });
+  }
+
+  isViewable(doc: Document): boolean {
+    const type = (doc.fileType || '').toUpperCase();
+    return ['GLTF', 'GLB'].includes(type) || !!doc.gltfPath;
   }
 
   transitionLifecycle(state: LifecycleState) {

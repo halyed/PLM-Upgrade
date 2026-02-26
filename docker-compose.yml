@@ -1,6 +1,11 @@
 version: '3.8'
 
 services:
+  conversion-service:
+    build: ./conversion-service
+    ports:
+      - "5000:5000"
+
   backend:
     build: ./backend
     ports:
@@ -13,9 +18,11 @@ services:
       MINIO_PUBLIC_ENDPOINT: http://localhost:9000
       MINIO_ACCESS_KEY: minioadmin
       MINIO_SECRET_KEY: minioadmin
+      CONVERSION_SERVICE_URL: http://conversion-service:5000
     depends_on:
       - postgres
       - minio
+      - conversion-service
 
   frontend:
     build: ./frontend

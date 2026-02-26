@@ -20,4 +20,7 @@ export class DocumentService {
   getDownloadUrl(id: number) {
     return this.http.get<{ url: string }>(`/api/documents/${id}/download-url`);
   }
+  downloadFile(id: number) {
+    return this.http.get(`/api/documents/${id}/file`, { responseType: 'blob' });
+  }
 }

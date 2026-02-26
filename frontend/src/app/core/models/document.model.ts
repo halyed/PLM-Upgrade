@@ -4,5 +4,6 @@ export interface Document {
   fileName: string;
   filePath: string;
   fileType: string;
+  gltfPath?: string;
   uploadedAt: string;
 }

@@ -68,12 +68,24 @@
         <mat-panel-title>BOM — Rev {{ selectedRevision()?.revisionCode }} ({{ bomChildren().length }} children)</mat-panel-title>
       </mat-expansion-panel-header>
 
-      <form [formGroup]="bomForm" (ngSubmit)="addBomChild()" style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
-        <mat-form-field appearance="outline" style="flex:1">
-          <mat-label>Child Revision ID</mat-label>
-          <input matInput formControlName="childRevisionId" type="number">
+      <form [formGroup]="bomForm" (ngSubmit)="addBomChild()" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+        <mat-form-field appearance="outline" style="flex:1;min-width:160px">
+          <mat-label>Item</mat-label>
+          <mat-select formControlName="childItemId" (selectionChange)="onBomItemChange($event.value)">
+            @for (i of bomItems(); track i.id) {
+              <mat-option [value]="i.id">{{ i.itemNumber }} — {{ i.name }}</mat-option>
+            }
+          </mat-select>
         </mat-form-field>
-        <mat-form-field appearance="outline" style="width:120px">
+        <mat-form-field appearance="outline" style="flex:1;min-width:120px">
+          <mat-label>Revision</mat-label>
+          <mat-select formControlName="childRevisionId" [disabled]="bomRevisions().length === 0">
+            @for (r of bomRevisions(); track r.id) {
+              <mat-option [value]="r.id">Rev {{ r.revisionCode }} ({{ r.status }})</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline" style="width:100px">
           <mat-label>Qty</mat-label>
           <input matInput formControlName="quantity" type="number" step="0.0001">
         </mat-form-field>
@@ -136,11 +148,14 @@
           <th mat-header-cell *matHeaderCellDef></th>
           <td mat-cell *matCellDef="let d">
             <a mat-icon-button [routerLink]="['/viewer', d.id]"
-               *ngIf="isViewable(d.fileType)"
+               *ngIf="isViewable(d)"
                matTooltip="View 3D">
               <mat-icon style="color:#7c4dff">view_in_ar</mat-icon>
             </a>
-            <button mat-icon-button color="warn" (click)="deleteDoc(d)"><mat-icon>delete</mat-icon></button>
+            <button mat-icon-button matTooltip="Download" (click)="downloadDoc(d)">
+              <mat-icon>download</mat-icon>
+            </button>
+            <button mat-icon-button color="warn" (click)="deleteDoc(d)" matTooltip="Delete"><mat-icon>delete</mat-icon></button>
           </td>
         </ng-container>
         <tr mat-header-row *matHeaderRowDef="docCols"></tr>

@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatTableModule } from '@angular/material/table';
@@ -10,6 +10,8 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatCardModule } from '@angular/material/card';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { ChangeRequestService } from '../../../core/services/change-request.service';
 import { ChangeRequest, ChangeRequestRequest, CrStatus } from '../../../core/models/change-request.model';
 
@@ -21,6 +23,7 @@ import { ChangeRequest, ChangeRequestRequest, CrStatus } from '../../../core/mod
     MatTableModule, MatButtonModule, MatIconModule,
     MatFormFieldModule, MatInputModule, MatSelectModule,
     MatSnackBarModule, MatCardModule, MatProgressSpinnerModule,
+    MatPaginatorModule, MatTooltipModule,
   ],
   templateUrl: './cr-list.component.html',
 })
@@ -31,6 +34,23 @@ export class CrListComponent implements OnInit {
   editingCr = signal<ChangeRequest | null>(null);
   displayedColumns = ['title', 'status', 'createdAt', 'actions'];
   statuses: CrStatus[] = ['OPEN', 'IN_REVIEW', 'APPROVED', 'REJECTED', 'CLOSED'];
+
+  searchTerm = signal('');
+  pageIndex = signal(0);
+  pageSize = signal(10);
+
+  filteredCrs = computed(() => {
+    const term = this.searchTerm().toLowerCase();
+    return this.crs().filter(c =>
+      c.title.toLowerCase().includes(term) ||
+      (c.description ?? '').toLowerCase().includes(term)
+    );
+  });
+
+  pagedCrs = computed(() => {
+    const start = this.pageIndex() * this.pageSize();
+    return this.filteredCrs().slice(start, start + this.pageSize());
+  });
 
   form = this.fb.group({
     title: ['', [Validators.required, Validators.maxLength(255)]],
@@ -48,6 +68,16 @@ export class CrListComponent implements OnInit {
       next: crs => { this.crs.set(crs); this.loading.set(false); },
       error: () => this.loading.set(false),
     });
+  }
+
+  onSearch(term: string) {
+    this.searchTerm.set(term);
+    this.pageIndex.set(0);
+  }
+
+  onPage(event: PageEvent) {
+    this.pageIndex.set(event.pageIndex);
+    this.pageSize.set(event.pageSize);
   }
 
   openCreate() {
@@ -76,6 +106,7 @@ export class CrListComponent implements OnInit {
   updateStatus(cr: ChangeRequest, status: CrStatus) {
     this.crService.updateStatus(cr.id, status).subscribe({
       next: updated => this.crs.update(list => list.map(c => c.id === updated.id ? updated : c)),
+      error: (e) => this.snack.open(e.error?.message ?? 'Error', 'Close', { duration: 3000 }),
     });
   }
 
@@ -83,6 +114,7 @@ export class CrListComponent implements OnInit {
     if (!confirm(`Delete "${cr.title}"?`)) return;
     this.crService.delete(cr.id).subscribe({
       next: () => { this.load(); this.snack.open('Deleted', '', { duration: 2000 }); },
+      error: (e) => this.snack.open(e.error?.message ?? 'Error', 'Close', { duration: 3000 }),
     });
   }
 }

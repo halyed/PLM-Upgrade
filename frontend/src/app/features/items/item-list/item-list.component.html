@@ -2,6 +2,11 @@
   <div class="action-bar">
     <h2 style="margin:0">Items</h2>
     <span class="spacer"></span>
+    <mat-form-field appearance="outline" style="width:260px;margin-right:12px" subscriptSizing="dynamic">
+      <mat-label>Search</mat-label>
+      <mat-icon matPrefix>search</mat-icon>
+      <input matInput (input)="onSearch($any($event.target).value)" placeholder="Item #, name, description…">
+    </mat-form-field>
     <button mat-raised-button color="primary" (click)="openCreate()">
       <mat-icon>add</mat-icon> New Item
     </button>
@@ -45,7 +50,7 @@
     <div style="text-align:center;padding:32px"><mat-spinner diameter="40" style="margin:auto"></mat-spinner></div>
   } @else {
     <mat-card>
-      <table mat-table [dataSource]="items()" style="width:100%">
+      <table mat-table [dataSource]="pagedItems()" style="width:100%">
         <ng-container matColumnDef="itemNumber">
           <th mat-header-cell *matHeaderCellDef>Item #</th>
           <td mat-cell *matCellDef="let row">{{ row.itemNumber }}</td>
@@ -81,9 +86,19 @@
         <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
         <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
       </table>
-      @if (items().length === 0) {
-        <p style="text-align:center;padding:24px;color:#666">No items yet. Create one to get started.</p>
+      @if (filteredItems().length === 0) {
+        <p style="text-align:center;padding:24px;color:#666">
+          {{ items().length === 0 ? 'No items yet. Create one to get started.' : 'No items match your search.' }}
+        </p>
       }
+      <mat-paginator
+        [length]="filteredItems().length"
+        [pageSize]="pageSize()"
+        [pageIndex]="pageIndex()"
+        [pageSizeOptions]="[5, 10, 25, 50]"
+        (page)="onPage($event)"
+        showFirstLastButtons>
+      </mat-paginator>
     </mat-card>
   }
 </div>

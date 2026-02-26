@@ -31,6 +31,9 @@ public class Document {
     @Column(name = "file_type", length = 50)
     private String fileType;
 
+    @Column(name = "gltf_path", length = 1024)
+    private String gltfPath;
+
     @CreationTimestamp
     @Column(name = "uploaded_at", nullable = false, updatable = false)
     private LocalDateTime uploadedAt;

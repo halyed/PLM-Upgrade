@@ -1,17 +1,18 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatCardModule } from '@angular/material/card';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { ItemService } from '../../../core/services/item.service';
 import { Item, ItemRequest, LifecycleState } from '../../../core/models/item.model';
 
@@ -20,9 +21,10 @@ import { Item, ItemRequest, LifecycleState } from '../../../core/models/item.mod
   standalone: true,
   imports: [
     CommonModule, RouterModule, ReactiveFormsModule,
-    MatTableModule, MatButtonModule, MatIconModule, MatDialogModule,
+    MatTableModule, MatButtonModule, MatIconModule,
     MatFormFieldModule, MatInputModule, MatSelectModule,
     MatSnackBarModule, MatCardModule, MatProgressSpinnerModule,
+    MatPaginatorModule, MatTooltipModule,
   ],
   templateUrl: './item-list.component.html',
 })
@@ -32,6 +34,24 @@ export class ItemListComponent implements OnInit {
   displayedColumns = ['itemNumber', 'name', 'lifecycleState', 'updatedAt', 'actions'];
   showForm = signal(false);
   editingItem = signal<Item | null>(null);
+
+  searchTerm = signal('');
+  pageIndex = signal(0);
+  pageSize = signal(10);
+
+  filteredItems = computed(() => {
+    const term = this.searchTerm().toLowerCase();
+    return this.items().filter(i =>
+      i.itemNumber.toLowerCase().includes(term) ||
+      i.name.toLowerCase().includes(term) ||
+      (i.description ?? '').toLowerCase().includes(term)
+    );
+  });
+
+  pagedItems = computed(() => {
+    const start = this.pageIndex() * this.pageSize();
+    return this.filteredItems().slice(start, start + this.pageSize());
+  });
 
   lifecycleStates: LifecycleState[] = ['DRAFT', 'IN_REVIEW', 'RELEASED', 'OBSOLETE'];
 
@@ -56,6 +76,16 @@ export class ItemListComponent implements OnInit {
       next: items => { this.items.set(items); this.loading.set(false); },
       error: () => this.loading.set(false),
     });
+  }
+
+  onSearch(term: string) {
+    this.searchTerm.set(term);
+    this.pageIndex.set(0);
+  }
+
+  onPage(event: PageEvent) {
+    this.pageIndex.set(event.pageIndex);
+    this.pageSize.set(event.pageSize);
   }
 
   openCreate() {

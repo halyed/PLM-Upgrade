@@ -12,5 +12,6 @@ public class DocumentResponse {
     private String filePath;
     private String fileType;
     private String gltfPath;
+    private String conversionStatus;
     private LocalDateTime uploadedAt;
 }

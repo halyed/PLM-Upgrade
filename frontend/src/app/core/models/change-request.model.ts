@@ -5,6 +5,10 @@ export interface ChangeRequest {
   title: string;
   description?: string;
   status: CrStatus;
+  linkedItemId?: number;
+  submittedBy?: string;
+  reviewedBy?: string;
+  reviewedAt?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -12,5 +16,5 @@ export interface ChangeRequest {
 export interface ChangeRequestRequest {
   title: string;
   description?: string;
-  status?: CrStatus;
+  linkedItemId?: number;
 }

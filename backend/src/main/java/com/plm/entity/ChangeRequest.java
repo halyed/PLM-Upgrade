@@ -36,4 +36,16 @@ public class ChangeRequest {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    @Column(name = "linked_item_id")
+    private Long linkedItemId;
+
+    @Column(name = "submitted_by", length = 100)
+    private String submittedBy;
+
+    @Column(name = "reviewed_by", length = 100)
+    private String reviewedBy;
+
+    @Column(name = "reviewed_at")
+    private LocalDateTime reviewedAt;
 }

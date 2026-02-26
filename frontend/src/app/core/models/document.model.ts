@@ -5,5 +5,6 @@ export interface Document {
   filePath: string;
   fileType: string;
   gltfPath?: string;
+  conversionStatus?: string;
   uploadedAt: string;
 }

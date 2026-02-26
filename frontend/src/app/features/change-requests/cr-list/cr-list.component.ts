@@ -12,7 +12,9 @@ import { MatCardModule } from '@angular/material/card';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatChipsModule } from '@angular/material/chips';
 import { ChangeRequestService } from '../../../core/services/change-request.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { ChangeRequest, ChangeRequestRequest, CrStatus } from '../../../core/models/change-request.model';
 
 @Component({
@@ -23,7 +25,7 @@ import { ChangeRequest, ChangeRequestRequest, CrStatus } from '../../../core/mod
     MatTableModule, MatButtonModule, MatIconModule,
     MatFormFieldModule, MatInputModule, MatSelectModule,
     MatSnackBarModule, MatCardModule, MatProgressSpinnerModule,
-    MatPaginatorModule, MatTooltipModule,
+    MatPaginatorModule, MatTooltipModule, MatChipsModule,
   ],
   templateUrl: './cr-list.component.html',
 })
@@ -32,7 +34,7 @@ export class CrListComponent implements OnInit {
   loading = signal(false);
   showForm = signal(false);
   editingCr = signal<ChangeRequest | null>(null);
-  displayedColumns = ['title', 'status', 'createdAt', 'actions'];
+  displayedColumns = ['title', 'status', 'submittedBy', 'createdAt', 'actions'];
   statuses: CrStatus[] = ['OPEN', 'IN_REVIEW', 'APPROVED', 'REJECTED', 'CLOSED'];
 
   searchTerm = signal('');
@@ -55,10 +57,14 @@ export class CrListComponent implements OnInit {
   form = this.fb.group({
     title: ['', [Validators.required, Validators.maxLength(255)]],
     description: [''],
-    status: ['OPEN' as CrStatus],
   });
 
-  constructor(private crService: ChangeRequestService, private fb: FormBuilder, private snack: MatSnackBar) {}
+  constructor(
+    private crService: ChangeRequestService,
+    public auth: AuthService,
+    private fb: FormBuilder,
+    private snack: MatSnackBar,
+  ) {}
 
   ngOnInit() { this.load(); }
 
@@ -82,7 +88,7 @@ export class CrListComponent implements OnInit {
 
   openCreate() {
     this.editingCr.set(null);
-    this.form.reset({ status: 'OPEN' });
+    this.form.reset();
     this.showForm.set(true);
   }
 
@@ -103,9 +109,23 @@ export class CrListComponent implements OnInit {
     });
   }
 
-  updateStatus(cr: ChangeRequest, status: CrStatus) {
-    this.crService.updateStatus(cr.id, status).subscribe({
+  submit(cr: ChangeRequest) {
+    this.crService.submit(cr.id).subscribe({
       next: updated => this.crs.update(list => list.map(c => c.id === updated.id ? updated : c)),
+      error: (e) => this.snack.open(e.error?.message ?? 'Error', 'Close', { duration: 3000 }),
+    });
+  }
+
+  approve(cr: ChangeRequest) {
+    this.crService.approve(cr.id).subscribe({
+      next: updated => { this.crs.update(list => list.map(c => c.id === updated.id ? updated : c)); this.snack.open('Approved', '', { duration: 2000 }); },
+      error: (e) => this.snack.open(e.error?.message ?? 'Error', 'Close', { duration: 3000 }),
+    });
+  }
+
+  reject(cr: ChangeRequest) {
+    this.crService.reject(cr.id).subscribe({
+      next: updated => { this.crs.update(list => list.map(c => c.id === updated.id ? updated : c)); this.snack.open('Rejected', '', { duration: 2000 }); },
       error: (e) => this.snack.open(e.error?.message ?? 'Error', 'Close', { duration: 3000 }),
     });
   }

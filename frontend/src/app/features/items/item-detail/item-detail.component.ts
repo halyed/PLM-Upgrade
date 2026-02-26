@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -15,10 +15,12 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { Subscription } from 'rxjs';
 import { ItemService } from '../../../core/services/item.service';
 import { RevisionService } from '../../../core/services/revision.service';
 import { BomService } from '../../../core/services/bom.service';
 import { DocumentService } from '../../../core/services/document.service';
+import { WebSocketService } from '../../../core/services/websocket.service';
 import { Item, LifecycleState } from '../../../core/models/item.model';
 import { Revision, RevisionStatus } from '../../../core/models/revision.model';
 import { BomLink } from '../../../core/models/bom.model';
@@ -36,7 +38,8 @@ import { Document } from '../../../core/models/document.model';
   ],
   templateUrl: './item-detail.component.html',
 })
-export class ItemDetailComponent implements OnInit {
+export class ItemDetailComponent implements OnInit, OnDestroy {
+  private wsSub?: Subscription;
   item = signal<Item | null>(null);
   revisions = signal<Revision[]>([]);
   selectedRevision = signal<Revision | null>(null);
@@ -67,6 +70,7 @@ export class ItemDetailComponent implements OnInit {
     private revisionService: RevisionService,
     private bomService: BomService,
     private documentService: DocumentService,
+    private wsService: WebSocketService,
     private fb: FormBuilder,
     private snack: MatSnackBar,
   ) {}
@@ -82,6 +86,23 @@ export class ItemDetailComponent implements OnInit {
       if (revs.length > 0) this.selectRevision(revs[revs.length - 1]);
     });
     this.itemService.getAll().subscribe(items => this.bomItems.set(items));
+
+    this.wsSub = this.wsService.conversionUpdates$.subscribe(event => {
+      this.documents.update(docs => docs.map(d =>
+        d.id === event.documentId
+          ? { ...d, conversionStatus: event.status, gltfPath: event.gltfPath ?? d.gltfPath }
+          : d
+      ));
+      if (event.status === 'DONE') {
+        this.snack.open('3D conversion complete', '', { duration: 3000 });
+      } else if (event.status === 'FAILED') {
+        this.snack.open('3D conversion failed', 'Close', { duration: 4000 });
+      }
+    });
+  }
+
+  ngOnDestroy() {
+    this.wsSub?.unsubscribe();
   }
 
   selectRevision(rev: Revision) {
@@ -182,6 +203,13 @@ export class ItemDetailComponent implements OnInit {
       },
       error: () => this.snack.open('Download failed', 'Close', { duration: 3000 }),
     });
+  }
+
+  conversionLabel(doc: Document): string {
+    const s = doc.conversionStatus;
+    if (!s || s === 'N_A') return '';
+    const labels: Record<string, string> = { PENDING: 'Queued', CONVERTING: 'Converting…', DONE: '3D Ready', FAILED: 'Conv. Failed' };
+    return labels[s] ?? s;
   }
 
   isViewable(doc: Document): boolean {

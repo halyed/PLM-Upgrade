@@ -13,5 +13,8 @@ export class ChangeRequestService {
   updateStatus(id: number, status: CrStatus) {
     return this.http.patch<ChangeRequest>(`${this.base}/${id}/status`, null, { params: { status } });
   }
+  submit(id: number) { return this.http.post<ChangeRequest>(`${this.base}/${id}/submit`, {}); }
+  approve(id: number) { return this.http.post<ChangeRequest>(`${this.base}/${id}/approve`, {}); }
+  reject(id: number) { return this.http.post<ChangeRequest>(`${this.base}/${id}/reject`, {}); }
   delete(id: number) { return this.http.delete<void>(`${this.base}/${id}`); }
 }

@@ -50,6 +50,24 @@ public class ChangeRequestController {
         return ResponseEntity.ok(changeRequestService.updateStatus(id, status));
     }
 
+    @PostMapping("/{id}/submit")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ENGINEER')")
+    public ResponseEntity<ChangeRequestResponse> submit(@PathVariable Long id) {
+        return ResponseEntity.ok(changeRequestService.submit(id));
+    }
+
+    @PostMapping("/{id}/approve")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ChangeRequestResponse> approve(@PathVariable Long id) {
+        return ResponseEntity.ok(changeRequestService.approve(id));
+    }
+
+    @PostMapping("/{id}/reject")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ChangeRequestResponse> reject(@PathVariable Long id) {
+        return ResponseEntity.ok(changeRequestService.reject(id));
+    }
+
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {

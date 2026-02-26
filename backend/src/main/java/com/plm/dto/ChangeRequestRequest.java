@@ -14,4 +14,6 @@ public class ChangeRequestRequest {
     private String description;
 
     private ChangeRequestStatus status;
+
+    private Long linkedItemId;
 }

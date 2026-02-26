@@ -1,6 +1,9 @@
 package com.plm.service;
 
+import com.plm.config.RabbitMqConfig;
+import com.plm.dto.ConversionMessage;
 import com.plm.dto.DocumentResponse;
+import com.plm.entity.ConversionStatus;
 import com.plm.entity.Document;
 import com.plm.entity.Revision;
 import com.plm.exception.ResourceNotFoundException;
@@ -9,14 +12,10 @@ import com.plm.repository.RevisionRepository;
 import io.minio.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
@@ -32,16 +31,13 @@ public class DocumentService {
     private final DocumentRepository documentRepository;
     private final RevisionRepository revisionRepository;
     private final MinioClient minioClient;
-    private final RestTemplate restTemplate;
+    private final RabbitTemplate rabbitTemplate;
 
     @Value("${minio.bucket.raw}")
     private String rawBucket;
 
     @Value("${minio.bucket.gltf}")
     private String gltfBucket;
-
-    @Value("${conversion.service.url}")
-    private String conversionServiceUrl;
 
     private static final Set<String> CONVERTIBLE = Set.of("STEP", "STP");
 
@@ -91,54 +87,19 @@ public class DocumentService {
                 .build();
         document = documentRepository.save(document);
 
-        // Trigger STEP → GLB conversion if applicable
+        // Publish async conversion job for STEP/STP files
         if (CONVERTIBLE.contains(extension)) {
-            document = convertAndStore(document, fileBytes, originalFilename, revisionId);
+            document.setConversionStatus(ConversionStatus.PENDING);
+            document = documentRepository.save(document);
+            rabbitTemplate.convertAndSend(
+                    RabbitMqConfig.CONVERSION_EXCHANGE,
+                    RabbitMqConfig.CONVERSION_KEY,
+                    new ConversionMessage(document.getId(), revisionId, document.getFilePath(), originalFilename)
+            );
+            log.info("Queued STEP→GLB conversion for document {}", document.getId());
         }
 
         return toResponse(document);
-    }
-
-    private Document convertAndStore(Document document, byte[] stepBytes, String originalFilename, Long revisionId) {
-        try {
-            log.info("Starting STEP→GLB conversion for document {}", document.getId());
-
-            MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-            body.add("file", new ByteArrayResource(stepBytes) {
-                @Override public String getFilename() { return originalFilename; }
-            });
-
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-
-            ResponseEntity<byte[]> response = restTemplate.postForEntity(
-                    conversionServiceUrl + "/convert/step-to-glb",
-                    new HttpEntity<>(body, headers),
-                    byte[].class
-            );
-
-            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                byte[] glbBytes = response.getBody();
-                String glbName = "revisions/" + revisionId + "/" + UUID.randomUUID() + "_"
-                        + originalFilename.replaceAll("(?i)\\.(step|stp)$", ".glb");
-
-                ensureBucketExists(gltfBucket);
-                minioClient.putObject(PutObjectArgs.builder()
-                        .bucket(gltfBucket)
-                        .object(glbName)
-                        .stream(new java.io.ByteArrayInputStream(glbBytes), glbBytes.length, -1)
-                        .contentType("model/gltf-binary")
-                        .build());
-
-                document.setGltfPath(gltfBucket + "/" + glbName);
-                document = documentRepository.save(document);
-                log.info("Conversion successful for document {}, GLB stored at {}", document.getId(), document.getGltfPath());
-            }
-        } catch (Exception e) {
-            log.warn("Conversion failed for document {}: {}", document.getId(), e.getMessage());
-            // Non-fatal: document is still usable, just not viewable in 3D
-        }
-        return document;
     }
 
     @Transactional
@@ -230,6 +191,7 @@ public class DocumentService {
         resp.setFilePath(d.getFilePath());
         resp.setFileType(d.getFileType());
         resp.setGltfPath(d.getGltfPath());
+        resp.setConversionStatus(d.getConversionStatus() != null ? d.getConversionStatus().name() : "N_A");
         resp.setUploadedAt(d.getUploadedAt());
         return resp;
     }

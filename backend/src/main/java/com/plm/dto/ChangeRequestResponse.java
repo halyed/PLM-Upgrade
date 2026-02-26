@@ -11,6 +11,10 @@ public class ChangeRequestResponse {
     private String title;
     private String description;
     private ChangeRequestStatus status;
+    private Long linkedItemId;
+    private String submittedBy;
+    private String reviewedBy;
+    private LocalDateTime reviewedAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

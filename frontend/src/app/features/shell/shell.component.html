@@ -10,12 +10,17 @@
         <mat-icon matListItemIcon>change_circle</mat-icon>
         <span matListItemTitle>Change Requests</span>
       </a>
+      <a mat-list-item routerLink="/audit-log" routerLinkActive="active-link" *ngIf="auth.isAdmin()">
+        <mat-icon matListItemIcon>history</mat-icon>
+        <span matListItemTitle>Audit Log</span>
+      </a>
     </mat-nav-list>
   </mat-sidenav>
 
   <mat-sidenav-content>
     <mat-toolbar color="primary">
       <span class="spacer"></span>
+      <span style="margin-right:8px;font-size:12px;opacity:0.8">{{ auth.currentUser()?.role }}</span>
       <span style="margin-right:12px">{{ auth.currentUser()?.username }}</span>
       <button mat-icon-button (click)="auth.logout()" matTooltip="Logout">
         <mat-icon>logout</mat-icon>

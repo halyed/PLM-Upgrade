@@ -34,6 +34,11 @@ public class Document {
     @Column(name = "gltf_path", length = 1024)
     private String gltfPath;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "conversion_status", length = 20)
+    @Builder.Default
+    private ConversionStatus conversionStatus = ConversionStatus.N_A;
+
     @CreationTimestamp
     @Column(name = "uploaded_at", nullable = false, updatable = false)
     private LocalDateTime uploadedAt;

@@ -71,6 +71,11 @@ public class ItemService {
         return toResponse(itemRepository.save(item));
     }
 
+    @Transactional(readOnly = true)
+    public List<ItemResponse> search(String q) {
+        return itemRepository.search(q).stream().map(this::toResponse).toList();
+    }
+
     @Transactional
     public void deleteItem(Long id) {
         Item item = findById(id);

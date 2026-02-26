@@ -45,6 +45,14 @@ export class AuthService {
     return !!this.getToken();
   }
 
+  isAdmin(): boolean {
+    return this.currentUser()?.role === 'ADMIN';
+  }
+
+  isViewer(): boolean {
+    return this.currentUser()?.role === 'VIEWER';
+  }
+
   private persist(res: AuthResponse) {
     localStorage.setItem(this.TOKEN_KEY, res.token);
     localStorage.setItem(this.USER_KEY, JSON.stringify(res));

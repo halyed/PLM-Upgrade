@@ -5,55 +5,87 @@ services:
     build: ./conversion-service
     ports:
       - "5000:5000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
   backend:
     build: ./backend
     ports:
       - "8080:8080"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/plm
-      SPRING_DATASOURCE_USERNAME: plm_user
-      SPRING_DATASOURCE_PASSWORD: plm_pass
-      MINIO_ENDPOINT: http://minio:9000
-      MINIO_PUBLIC_ENDPOINT: http://localhost:9000
-      MINIO_ACCESS_KEY: minioadmin
-      MINIO_SECRET_KEY: minioadmin
-      CONVERSION_SERVICE_URL: http://conversion-service:5000
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:postgresql://postgres:5432/plm}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-plm_user}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-plm_pass}
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT:-http://minio:9000}
+      MINIO_PUBLIC_ENDPOINT: ${MINIO_PUBLIC_ENDPOINT:-http://localhost:9000}
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      CONVERSION_SERVICE_URL: ${CONVERSION_SERVICE_URL:-http://conversion-service:5000}
+      JWT_SECRET: ${JWT_SECRET:-PLM_super_secret_key_minimum_32_chars_long_for_HS256}
     depends_on:
-      - postgres
-      - minio
-      - conversion-service
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      conversion-service:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:8080/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
 
   frontend:
     build: ./frontend
     ports:
       - "3000:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
 
   postgres:
     image: postgres:15-alpine
     environment:
-      POSTGRES_DB: plm
-      POSTGRES_USER: plm_user
-      POSTGRES_PASSWORD: plm_pass
+      POSTGRES_DB: ${POSTGRES_DB:-plm}
+      POSTGRES_USER: ${POSTGRES_USER:-plm_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-plm_pass}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./db/migrations:/docker-entrypoint-initdb.d
     ports:
       - "5432:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-plm_user} -d ${POSTGRES_DB:-plm}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   minio:
     image: minio/minio:latest
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
     volumes:
       - minio_data:/data
     ports:
       - "9000:9000"
       - "9001:9001"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data:

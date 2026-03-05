@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: integration-service
+  namespace: plm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: integration-service
+  template:
+    metadata:
+      labels:
+        app: integration-service
+    spec:
+      containers:
+        - name: integration-service
+          image: ghcr.io/halyed/plm-upgrade-integration:latest
+          ports:
+            - containerPort: 8084
+          envFrom:
+            - configMapRef:
+                name: plm-config
+          env:
+            - name: ODOO_ENABLED
+              value: "false"
+            - name: MES_ENABLED
+              value: "false"
+            - name: FREECAD_ENABLED
+              value: "false"
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8084
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "125m"
+            limits:
+              memory: "512Mi"
+              cpu: "250m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: integration-service
+  namespace: plm
+spec:
+  selector:
+    app: integration-service
+  ports:
+    - port: 8084
+      targetPort: 8084

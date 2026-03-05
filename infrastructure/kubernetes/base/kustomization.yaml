@@ -16,5 +16,6 @@ resources:
   - cad-service.yaml
   - workflow-service.yaml
   - search-service.yaml
+  - integration-service.yaml
   - frontend.yaml
   - api-gateway.yaml

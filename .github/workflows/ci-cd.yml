@@ -84,6 +84,15 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Build and push workflow-service
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/workflow-service
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-workflow:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
       - name: Build and push api-gateway
         uses: docker/build-push-action@v5
         with:

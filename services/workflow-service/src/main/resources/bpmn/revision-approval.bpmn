@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
+             xmlns:activiti="http://activiti.org/bpmn"
+             targetNamespace="http://camunda.org/schema/1.0/bpmn"
+             id="revision-approval">
+
+  <process id="revision-approval" name="Revision Approval" isExecutable="true">
+
+    <!-- Start: Engineer submits revision for approval -->
+    <startEvent id="start" name="Revision Submitted">
+      <outgoing>flow1</outgoing>
+    </startEvent>
+
+    <sequenceFlow id="flow1" sourceRef="start" targetRef="manager-review"/>
+
+    <!-- Task 1: Manager reviews the design -->
+    <userTask id="manager-review" name="Manager Review">
+      <extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="manager"/>
+      </extensionElements>
+      <incoming>flow1</incoming>
+      <outgoing>flow2</outgoing>
+    </userTask>
+
+    <sequenceFlow id="flow2" sourceRef="manager-review" targetRef="manager-gateway"/>
+
+    <exclusiveGateway id="manager-gateway" name="Manager Decision">
+      <incoming>flow2</incoming>
+      <outgoing>flow3-approved</outgoing>
+      <outgoing>flow3-rejected</outgoing>
+    </exclusiveGateway>
+
+    <!-- Manager rejected → notify and end -->
+    <sequenceFlow id="flow3-rejected" sourceRef="manager-gateway" targetRef="notify-rejected">
+      <conditionExpression>${managerDecision == 'REJECTED'}</conditionExpression>
+    </sequenceFlow>
+
+    <!-- Manager approved → quality review -->
+    <sequenceFlow id="flow3-approved" sourceRef="manager-gateway" targetRef="quality-review">
+      <conditionExpression>${managerDecision == 'APPROVED'}</conditionExpression>
+    </sequenceFlow>
+
+    <!-- Task 2: Quality engineer reviews -->
+    <userTask id="quality-review" name="Quality Approval">
+      <extensionElements>
+        <zeebe:assignmentDefinition candidateGroups="quality"/>
+      </extensionElements>
+      <incoming>flow3-approved</incoming>
+      <outgoing>flow4</outgoing>
+    </userTask>
+
+    <sequenceFlow id="flow4" sourceRef="quality-review" targetRef="quality-gateway"/>
+
+    <exclusiveGateway id="quality-gateway" name="Quality Decision">
+      <incoming>flow4</incoming>
+      <outgoing>flow5-approved</outgoing>
+      <outgoing>flow5-rejected</outgoing>
+    </exclusiveGateway>
+
+    <sequenceFlow id="flow5-rejected" sourceRef="quality-gateway" targetRef="notify-rejected">
+      <conditionExpression>${qualityDecision == 'REJECTED'}</conditionExpression>
+    </sequenceFlow>
+
+    <sequenceFlow id="flow5-approved" sourceRef="quality-gateway" targetRef="release-revision">
+      <conditionExpression>${qualityDecision == 'APPROVED'}</conditionExpression>
+    </sequenceFlow>
+
+    <!-- Service Task: Auto-release revision via Kafka event -->
+    <serviceTask id="release-revision" name="Release Revision">
+      <extensionElements>
+        <zeebe:taskDefinition type="release-revision"/>
+      </extensionElements>
+      <incoming>flow5-approved</incoming>
+      <outgoing>flow6</outgoing>
+    </serviceTask>
+
+    <sequenceFlow id="flow6" sourceRef="release-revision" targetRef="end-approved"/>
+
+    <!-- End events -->
+    <endEvent id="end-approved" name="Revision Released">
+      <incoming>flow6</incoming>
+    </endEvent>
+
+    <serviceTask id="notify-rejected" name="Notify Rejection">
+      <extensionElements>
+        <zeebe:taskDefinition type="notify-rejection"/>
+      </extensionElements>
+      <incoming>flow3-rejected</incoming>
+      <incoming>flow5-rejected</incoming>
+      <outgoing>flow7</outgoing>
+    </serviceTask>
+
+    <sequenceFlow id="flow7" sourceRef="notify-rejected" targetRef="end-rejected"/>
+
+    <endEvent id="end-rejected" name="Revision Rejected">
+      <incoming>flow7</incoming>
+    </endEvent>
+
+  </process>
+</definitions>

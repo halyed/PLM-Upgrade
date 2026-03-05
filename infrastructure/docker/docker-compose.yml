@@ -170,6 +170,41 @@ services:
       start_period: 10s
     restart: unless-stopped
 
+  # ─── Workflow Service (Camunda 8) ─────────────────────────────────────────
+
+  camunda:
+    image: camunda/camunda-platform:8.4
+    container_name: plm-camunda
+    environment:
+      ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME: io.camunda.zeebe.exporter.ElasticsearchExporter
+      ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL: http://elasticsearch:9200
+      ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX: zeebe-record
+      CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS: camunda:26500
+      CAMUNDA_OPERATE_ELASTICSEARCH_URL: http://elasticsearch:9200
+      CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS: camunda:26500
+      CAMUNDA_TASKLIST_ELASTICSEARCH_URL: http://elasticsearch:9200
+    ports:
+      - "26500:26500"   # Zeebe gRPC
+      - "8088:8080"     # Operate UI
+    depends_on:
+      - elasticsearch
+    restart: unless-stopped
+
+  workflow-service:
+    build: ../../services/workflow-service
+    container_name: plm-workflow-service
+    ports:
+      - "8082:8082"
+    environment:
+      KEYCLOAK_ISSUER_URI: http://auth-service:8080/realms/plm
+      ZEEBE_GRPC_ADDRESS: http://camunda:26500
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    depends_on:
+      - camunda
+      - kafka
+      - auth-service
+    restart: unless-stopped
+
   # ─── API Gateway ──────────────────────────────────────────────────────────
 
   api-gateway:

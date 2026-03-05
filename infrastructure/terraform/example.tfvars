@@ -1,0 +1,12 @@
+aws_region         = "eu-west-1"
+project            = "plm"
+environment        = "prod"
+vpc_cidr           = "10.0.0.0/16"
+eks_cluster_version = "1.29"
+node_instance_type = "t3.medium"
+node_min_size      = 2
+node_max_size      = 6
+node_desired_size  = 3
+db_username        = "plm_user"
+db_password        = "CHANGE_ME"
+rds_instance_class = "db.t3.medium"

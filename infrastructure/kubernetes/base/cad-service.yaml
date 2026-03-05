@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cad-service
+  namespace: plm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cad-service
+  template:
+    metadata:
+      labels:
+        app: cad-service
+    spec:
+      containers:
+        - name: cad-service
+          image: ghcr.io/halyed/plm-upgrade-cad:latest
+          ports:
+            - containerPort: 5000
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cad-service
+  namespace: plm
+spec:
+  selector:
+    app: cad-service
+  ports:
+    - port: 5000
+      targetPort: 5000

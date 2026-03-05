@@ -1,0 +1,22 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+bases:
+  - ../../base
+
+patches:
+  - path: replicas-patch.yaml
+
+images:
+  - name: ghcr.io/halyed/plm-upgrade-plm-core
+    newTag: "1.0.0"
+  - name: ghcr.io/halyed/plm-upgrade-cad
+    newTag: "1.0.0"
+  - name: ghcr.io/halyed/plm-upgrade-workflow
+    newTag: "1.0.0"
+  - name: ghcr.io/halyed/plm-upgrade-search
+    newTag: "1.0.0"
+  - name: ghcr.io/halyed/plm-upgrade-frontend
+    newTag: "1.0.0"
+  - name: ghcr.io/halyed/plm-upgrade-api-gateway
+    newTag: "1.0.0"

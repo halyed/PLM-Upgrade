@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: plm-config
+  namespace: plm
+data:
+  KEYCLOAK_ISSUER_URI: "http://auth-service:8080/realms/plm"
+  SPRING_KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+  MINIO_ENDPOINT: "http://minio:9000"
+  CONVERSION_SERVICE_URL: "http://cad-service:5000"
+  ELASTICSEARCH_URIS: "elasticsearch:9200"
+  ZEEBE_GRPC_ADDRESS: "http://camunda:26500"

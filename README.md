@@ -1,155 +1,115 @@
-# PLM Upgrade — Cloud-Native PLM Platform
+# PLM Platform v2 — Cloud-Native Microservices PLM
 
-A lightweight, cloud-native **Product Lifecycle Management (PLM)** platform featuring:
+A full **Product Lifecycle Management (PLM)** platform built on a microservices architecture.
 
-- Item & BOM management with revisioning
-- CAD file storage (STEP) and 3D in-browser rendering
-- Containerized deployment on AWS
-- Full CI/CD pipeline via GitHub Actions
+> **v1 (monolith)** is preserved on the `PLM-Upgrade-v1` branch.
 
 ---
 
 ## Architecture
 
 ```
-Frontend (React + Three.js 3D Viewer)
-        ↓
-Backend API (Spring Boot)
-        ↓
-   PostgreSQL
-        ↓
-Object Storage (AWS S3 / MinIO)
-
-Deployed via Docker + GitHub Actions → AWS EC2
+Angular Frontend (frontend-angular/)
+        |
+   API Gateway  (Nginx — api-gateway/)
+        |
+----------------------------------------------------
+|           |          |          |         |      |
+Auth     PLM Core    CAD      Workflow   Search  Integration
+(Keycloak) (Spring)  (Flask)  (Temporal) (ES)   (Kafka)
+----------------------------------------------------
+        |
+   Event Bus (Kafka)
+        |
+Shared Infrastructure
+(PostgreSQL · MinIO · Redis · Elasticsearch)
 ```
 
 ---
 
-## System Components
+## Repository Structure
 
-### A. PLM Backend
-- Item creation
-- Revisioning (A, B, C...)
-- Lifecycle states
-- Multi-level BOM
-- Change Requests
-- Document association
-
-**Stack:** Spring Boot · PostgreSQL · JPA ORM · JWT Authentication
-
-### B. 3D Web Viewer
-- Load STEP files → convert to glTF → render in browser
-- Orbit controls, zoom/pan
-- Basic object tree
-- Part highlighting
-- Optional: section view, exploded view, measure tool
-
-**Stack:** React · Three.js
-
-### C. CAD File Handling
-1. Upload STEP file
-2. Store in S3 (AWS) or MinIO (local S3-compatible)
-3. Convert STEP → glTF (via OpenCascade CLI or FreeCAD headless)
-4. Render glTF in browser
-
----
-
-## Data Model
-
-```sql
-items            -- id, item_number, name, description, lifecycle_state
-revisions        -- id, item_id, revision_code, status
-bom_links        -- parent_revision_id, child_revision_id, quantity
-documents        -- id, revision_id, file_path, file_type
-change_requests  -- id, title, status
+```
+plm-platform/
+│
+├── frontend-angular/          # Angular 17 SPA
+├── api-gateway/               # Nginx routing + Dockerfile
+│
+├── services/
+│   ├── auth-service/          # Keycloak config + realm export
+│   ├── plm-core-service/      # Spring Boot — items, revisions, BOM, docs, CRs
+│   ├── cad-service/           # Python Flask — STEP→GLB conversion
+│   ├── workflow-service/      # Approval workflow engine (TODO: Temporal/Camunda)
+│   ├── search-service/        # Elasticsearch-backed search (TODO)
+│   └── integration-service/   # ERP/MES connectors (TODO)
+│
+├── infrastructure/
+│   ├── docker/                # docker-compose.yml (full v2 stack)
+│   ├── kubernetes/            # K8s manifests (TODO)
+│   └── terraform/             # IaC (TODO)
+│
+└── docs/                      # Architecture docs
 ```
 
 ---
 
-## DevOps
-
-### Docker
-- `Dockerfile` for backend
-- `Dockerfile` for frontend
-- `docker-compose.yml` for local stack (backend + frontend + postgres + minio)
-
-### CI/CD (GitHub Actions)
-1. Install dependencies
-2. Run tests
-3. Build Docker images
-4. Push to container registry
-5. Deploy to AWS EC2
-
-### Cloud (AWS Free Tier)
-- EC2 for compute
-- S3 for file storage
-- Security groups
-- Optional: Nginx reverse proxy + HTTPS (Let's Encrypt)
-
----
-
-## Advanced Architecture (Senior Level)
-
-### Event-Driven
-- RabbitMQ or Kafka
-- Item revised → event triggered
-- File uploaded → conversion job triggered
-
-### Microservices
-| Service | Responsibility |
-|---|---|
-| Item Service | Item + revision CRUD |
-| BOM Service | BOM link management |
-| File Service | Upload + storage |
-| 3D Processing Service | STEP → glTF conversion |
-
-### Monitoring
-- Prometheus
-- Grafana
-- Centralized logging
-
----
-
-## Project Timeline
-
-| Phase | Duration |
-|---|---|
-| Core PLM backend + DB | 4 weeks |
-| 3D Viewer (Three.js) | 2–3 weeks |
-| DevOps + Cloud (Docker, CI/CD, AWS) | 3 weeks |
-| Advanced features (events, microservices) | ongoing |
-| **Total** | **~10–12 weeks** |
-
----
-
-## Getting Started
+## Quick Start (Local)
 
 ### Prerequisites
-- Java 17+
-- Node.js 18+
 - Docker & Docker Compose
-- PostgreSQL (or use Docker)
+- Java 17+ (for PLM Core dev)
+- Node.js 20+ (for frontend dev)
+- Python 3.10+ with conda (for CAD service dev)
 
-### Run locally
+### Run full stack
 
 ```bash
-# Start full stack
-docker-compose up --build
+docker compose -f infrastructure/docker/docker-compose.yml up --build
+```
 
-# Backend only
-cd backend && ./mvnw spring-boot:run
+| Service         | URL                        |
+|-----------------|----------------------------|
+| Frontend        | http://localhost:4200       |
+| API Gateway     | http://localhost:80         |
+| PLM Core API    | http://localhost:8080       |
+| Keycloak Admin  | http://localhost:8081       |
+| MinIO Console   | http://localhost:9001       |
+| Elasticsearch   | http://localhost:9200       |
 
-# Frontend only
-cd frontend && npm install && npm start
+### Run individual services (dev mode)
+
+```bash
+# PLM Core
+cd services/plm-core-service && ./mvnw spring-boot:run
+
+# CAD Service
+cd services/cad-service && flask run
+
+# Frontend
+cd frontend-angular && npm install && npm start
 ```
 
 ---
 
-## What This Project Demonstrates
+## Services
 
-- PLM data modeling
-- CAD file lifecycle management
-- 3D rendering pipelines in the browser
-- Cloud deployment on AWS
-- DevOps automation with Docker + GitHub Actions
-- Microservice architecture patterns
+| Service | Port | Tech | Status |
+|---|---|---|---|
+| auth-service | 8081 | Keycloak 24 | Ready |
+| plm-core-service | 8080 | Spring Boot 3 | Ready |
+| cad-service | 5000 | Python Flask | Ready |
+| workflow-service | 8082 | TBD (Temporal) | Planned |
+| search-service | 8083 | Elasticsearch | Planned |
+| integration-service | — | Kafka | Planned |
+| api-gateway | 80 | Nginx | Ready |
+| frontend-angular | 4200 | Angular 17 | Ready |
+
+---
+
+## CI/CD
+
+GitHub Actions (`.github/workflows/ci-cd.yml`):
+1. Test PLM Core (Maven + H2)
+2. Build Angular frontend
+3. Build & push Docker images to GHCR
+4. Deploy to EC2 (main branch only)

@@ -2,7 +2,7 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [main]
+    branches: [main, v2-dev]
   pull_request:
     branches: [main]
 
@@ -11,7 +11,10 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  test-backend:
+
+  # ─── Tests ──────────────────────────────────────────────────────────────────
+
+  test-plm-core:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -20,8 +23,9 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-      - name: Run backend tests
-        working-directory: ./backend
+          cache: maven
+      - name: Run PLM Core Service tests
+        working-directory: ./services/plm-core-service
         run: ./mvnw test
 
   test-frontend:
@@ -31,17 +35,19 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
           cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
-      - name: Install and test
-        working-directory: ./frontend
+          cache-dependency-path: frontend-angular/package-lock.json
+      - name: Install and build
+        working-directory: ./frontend-angular
         run: |
           npm ci
-          npm test -- --watchAll=false
+          npm run build
+
+  # ─── Build & Push Images ────────────────────────────────────────────────────
 
   build-and-push:
-    needs: [test-backend, test-frontend]
+    needs: [test-plm-core, test-frontend]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     permissions:
@@ -49,24 +55,54 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@v4
-      - name: Log in to registry
+
+      - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build and push backend
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push plm-core-service
         uses: docker/build-push-action@v5
         with:
-          context: ./backend
+          context: ./services/plm-core-service
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:latest
-      - name: Build and push frontend
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-plm-core:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push cad-service
         uses: docker/build-push-action@v5
         with:
-          context: ./frontend
+          context: ./services/cad-service
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-cad:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push api-gateway
+        uses: docker/build-push-action@v5
+        with:
+          context: ./api-gateway
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-api-gateway:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push frontend-angular
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend-angular
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ─── Deploy ─────────────────────────────────────────────────────────────────
 
   deploy:
     needs: build-and-push
@@ -81,5 +117,5 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd /opt/plm-upgrade
-            docker compose pull
-            docker compose up -d --remove-orphans
+            docker compose -f infrastructure/docker/docker-compose.yml pull
+            docker compose -f infrastructure/docker/docker-compose.yml up -d --remove-orphans

@@ -1,0 +1,42 @@
+{
+  "realm": "plm",
+  "enabled": true,
+  "displayName": "PLM Platform",
+  "roles": {
+    "realm": [
+      { "name": "ADMIN", "description": "Platform administrator" },
+      { "name": "ENGINEER", "description": "Design engineer" },
+      { "name": "VIEWER", "description": "Read-only access" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "plm-frontend",
+      "publicClient": true,
+      "redirectUris": ["http://localhost:4200/*"],
+      "webOrigins": ["http://localhost:4200"],
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true
+    },
+    {
+      "clientId": "plm-core-service",
+      "publicClient": false,
+      "serviceAccountsEnabled": true,
+      "bearerOnly": true
+    }
+  ],
+  "users": [
+    {
+      "username": "admin",
+      "enabled": true,
+      "credentials": [{ "type": "password", "value": "admin123", "temporary": false }],
+      "realmRoles": ["ADMIN"]
+    },
+    {
+      "username": "engineer1",
+      "enabled": true,
+      "credentials": [{ "type": "password", "value": "engineer123", "temporary": false }],
+      "realmRoles": ["ENGINEER"]
+    }
+  ]
+}

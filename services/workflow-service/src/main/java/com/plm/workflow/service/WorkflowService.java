@@ -1,6 +1,7 @@
 package com.plm.workflow.service;
 
 import com.plm.workflow.dto.StartWorkflowRequest;
+import com.plm.workflow.dto.WorkflowInstance;
 import com.plm.workflow.dto.WorkflowResponse;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
@@ -8,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.Map;
 
 @Service
@@ -16,6 +18,7 @@ import java.util.Map;
 public class WorkflowService {
 
     private final ZeebeClient zeebeClient;
+    private final WorkflowInstanceStore store;
 
     public WorkflowResponse startApprovalWorkflow(StartWorkflowRequest request) {
         log.info("Starting approval workflow for revision {} (item {})",
@@ -35,13 +38,22 @@ public class WorkflowService {
                 .send()
                 .join();
 
-        log.info("Workflow started: processInstanceKey={}", instance.getProcessInstanceKey());
+        String key = String.valueOf(instance.getProcessInstanceKey());
+        log.info("Workflow started: processInstanceKey={}", key);
 
-        return new WorkflowResponse(
-                String.valueOf(instance.getProcessInstanceKey()),
+        store.save(new WorkflowInstance(
+                key,
                 request.getRevisionId(),
-                "STARTED",
-                "Approval workflow started — awaiting manager review"
-        );
+                request.getItemId(),
+                request.getItemName(),
+                request.getRevisionCode(),
+                request.getSubmittedBy(),
+                "RUNNING",
+                "MANAGER_REVIEW",
+                Instant.now()
+        ));
+
+        return new WorkflowResponse(key, request.getRevisionId(), "STARTED",
+                "Approval workflow started — awaiting manager review");
     }
 }

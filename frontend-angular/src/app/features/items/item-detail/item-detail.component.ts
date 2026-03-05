@@ -21,6 +21,8 @@ import { RevisionService } from '../../../core/services/revision.service';
 import { BomService } from '../../../core/services/bom.service';
 import { DocumentService } from '../../../core/services/document.service';
 import { WebSocketService } from '../../../core/services/websocket.service';
+import { WorkflowService, WorkflowInstance } from '../../../core/services/workflow.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { Item, LifecycleState } from '../../../core/models/item.model';
 import { Revision, RevisionStatus } from '../../../core/models/revision.model';
 import { BomLink } from '../../../core/models/bom.model';
@@ -47,6 +49,8 @@ export class ItemDetailComponent implements OnInit, OnDestroy {
   documents = signal<Document[]>([]);
   loading = signal(true);
 
+  workflows = signal<WorkflowInstance[]>([]);
+
   // BOM dropdown data
   bomItems = signal<Item[]>([]);
   bomRevisions = signal<Revision[]>([]);
@@ -71,6 +75,8 @@ export class ItemDetailComponent implements OnInit, OnDestroy {
     private bomService: BomService,
     private documentService: DocumentService,
     private wsService: WebSocketService,
+    private workflowService: WorkflowService,
+    private auth: AuthService,
     private fb: FormBuilder,
     private snack: MatSnackBar,
   ) {}
@@ -109,6 +115,10 @@ export class ItemDetailComponent implements OnInit, OnDestroy {
     this.selectedRevision.set(rev);
     this.bomService.getChildren(rev.id).subscribe(bom => this.bomChildren.set(bom));
     this.documentService.getByRevision(rev.id).subscribe(docs => this.documents.set(docs));
+    this.workflowService.getByRevision(rev.id).subscribe({
+      next: wf => this.workflows.set(wf),
+      error: () => this.workflows.set([]),
+    });
   }
 
   nextRevision() {
@@ -215,6 +225,27 @@ export class ItemDetailComponent implements OnInit, OnDestroy {
   isViewable(doc: Document): boolean {
     const type = (doc.fileType || '').toUpperCase();
     return ['GLTF', 'GLB'].includes(type) || !!doc.gltfPath;
+  }
+
+  startApproval(rev: Revision) {
+    const item = this.item();
+    if (!item) return;
+    this.workflowService.startApproval(rev.id, {
+      itemId: item.id,
+      itemName: item.name,
+      revisionCode: rev.revisionCode,
+      submittedBy: this.auth.getUsername(),
+    }).subscribe({
+      next: res => {
+        if (res.status === 'UNAVAILABLE') {
+          this.snack.open(`Workflow engine unavailable: ${res.message}`, 'Close', { duration: 5000 });
+        } else {
+          this.snack.open(`Workflow started`, '', { duration: 2000 });
+          this.workflowService.getByRevision(rev.id).subscribe(wf => this.workflows.set(wf));
+        }
+      },
+      error: (e) => this.snack.open(e.error?.message ?? 'Failed to start workflow', 'Close', { duration: 3000 }),
+    });
   }
 
   transitionLifecycle(state: LifecycleState) {

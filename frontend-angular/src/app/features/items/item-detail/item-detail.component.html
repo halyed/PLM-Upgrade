@@ -54,12 +54,52 @@
                   [style.font-weight]="selectedRevision()?.id === r.id ? 'bold' : 'normal'">
             {{ selectedRevision()?.id === r.id ? '● Selected' : 'Select' }}
           </button>
+          <button mat-icon-button color="accent" (click)="startApproval(r)"
+                  matTooltip="Start approval workflow">
+            <mat-icon>play_circle</mat-icon>
+          </button>
         </td>
       </ng-container>
       <tr mat-header-row *matHeaderRowDef="revCols"></tr>
       <tr mat-row *matRowDef="let row; columns: revCols;"></tr>
     </table>
   </mat-expansion-panel>
+
+  <!-- Workflows (shown when revision selected) -->
+  @if (selectedRevision() && workflows().length > 0) {
+    <mat-expansion-panel [expanded]="true" style="margin-bottom:16px">
+      <mat-expansion-panel-header>
+        <mat-panel-title>Approval Workflows — Rev {{ selectedRevision()?.revisionCode }} ({{ workflows().length }})</mat-panel-title>
+      </mat-expansion-panel-header>
+
+      <div style="display:flex;flex-direction:column;gap:8px;padding:8px 0">
+        @for (wf of workflows(); track wf.processInstanceKey) {
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:4px;background:#f5f5f5;flex-wrap:wrap">
+            <mat-icon [style.color]="wf.status === 'COMPLETED' ? '#4caf50' : wf.status === 'REJECTED' ? '#f44336' : '#ff9800'">
+              {{ wf.status === 'COMPLETED' ? 'check_circle' : wf.status === 'REJECTED' ? 'cancel' : 'pending' }}
+            </mat-icon>
+            <div style="flex:1">
+              <div style="font-weight:500;font-size:13px">
+                {{ wf.currentStep === 'MANAGER_REVIEW' ? 'Awaiting Manager Review'
+                   : wf.currentStep === 'QUALITY_REVIEW' ? 'Awaiting Quality Review'
+                   : wf.currentStep === 'RELEASED' ? 'Approved & Released'
+                   : wf.currentStep === 'REJECTED' ? 'Rejected'
+                   : wf.currentStep }}
+              </div>
+              <div style="font-size:12px;color:#777">
+                Started by {{ wf.submittedBy }} · {{ wf.startedAt | date:'short' }}
+              </div>
+            </div>
+            <span [style.color]="wf.status === 'COMPLETED' ? '#4caf50' : wf.status === 'REJECTED' ? '#f44336' : '#ff9800'"
+                  style="font-size:12px;font-weight:600">
+              {{ wf.status }}
+            </span>
+            <span style="font-size:11px;color:#aaa;font-family:monospace">{{ wf.processInstanceKey }}</span>
+          </div>
+        }
+      </div>
+    </mat-expansion-panel>
+  }
 
   <!-- BOM (shown when revision selected) -->
   @if (selectedRevision()) {

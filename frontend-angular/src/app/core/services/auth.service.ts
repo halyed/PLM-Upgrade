@@ -12,7 +12,8 @@ export class AuthService {
   }
 
   getUsername(): string {
-    return this.keycloak.getUsername();
+    const token = this.keycloak.getKeycloakInstance().tokenParsed as any;
+    return token?.preferred_username ?? '';
   }
 
   async getToken(): Promise<string> {

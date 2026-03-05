@@ -24,6 +24,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers("/ws/**").permitAll()
+                        // Allow internal service-to-service reads (e.g. search-service reindex)
+                        .requestMatchers(HttpMethod.GET, "/api/items", "/api/items/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/**").hasAnyRole("ADMIN", "ENGINEER", "VIEWER")
                         .requestMatchers("/api/**").hasAnyRole("ADMIN", "ENGINEER")
                         .anyRequest().authenticated()

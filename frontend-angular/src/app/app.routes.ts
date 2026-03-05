@@ -34,6 +34,16 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/audit-log/audit-log.component').then(m => m.AuditLogComponent),
       },
+      {
+        path: 'search',
+        loadComponent: () =>
+          import('./features/search/search.component').then(m => m.SearchComponent),
+      },
+      {
+        path: 'integration',
+        loadComponent: () =>
+          import('./features/integration/integration.component').then(m => m.IntegrationComponent),
+      },
     ],
   },
   { path: '**', redirectTo: '' },

@@ -1,6 +1,6 @@
 import { APP_INITIALIZER, ApplicationConfig, importProvidersFrom } from '@angular/core';
 import { provideRouter } from '@angular/router';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { KeycloakAngularModule, KeycloakService } from 'keycloak-angular';
 import { routes } from './app.routes';
@@ -12,7 +12,7 @@ export const appConfig: ApplicationConfig = {
     // KeycloakAngularModule registers KeycloakService + bearer interceptor
     importProvidersFrom(KeycloakAngularModule),
     // provideHttpClient without custom interceptors — Keycloak handles bearer tokens
-    provideHttpClient(),
+    provideHttpClient(withInterceptorsFromDi()),
     provideAnimations(),
     {
       provide: APP_INITIALIZER,

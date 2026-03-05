@@ -6,9 +6,17 @@
         <mat-icon matListItemIcon>inventory_2</mat-icon>
         <span matListItemTitle>Items</span>
       </a>
+      <a mat-list-item routerLink="/search" routerLinkActive="active-link">
+        <mat-icon matListItemIcon>search</mat-icon>
+        <span matListItemTitle>Search</span>
+      </a>
       <a mat-list-item routerLink="/change-requests" routerLinkActive="active-link">
         <mat-icon matListItemIcon>change_circle</mat-icon>
         <span matListItemTitle>Change Requests</span>
+      </a>
+      <a mat-list-item routerLink="/integration" routerLinkActive="active-link">
+        <mat-icon matListItemIcon>cable</mat-icon>
+        <span matListItemTitle>Integrations</span>
       </a>
       <a mat-list-item routerLink="/audit-log" routerLinkActive="active-link" *ngIf="auth.isAdmin()">
         <mat-icon matListItemIcon>history</mat-icon>
@@ -19,8 +27,19 @@
 
   <mat-sidenav-content>
     <mat-toolbar color="primary">
+      <input
+        #searchInput
+        type="text"
+        placeholder="Search items…"
+        (keyup.enter)="onSearch(searchInput.value)"
+        style="background:rgba(255,255,255,0.15);border:none;border-radius:4px;padding:6px 12px;
+               color:white;font-size:14px;width:240px;outline:none;margin-right:8px"
+      >
+      <button mat-icon-button (click)="onSearch(searchInput.value)" matTooltip="Search">
+        <mat-icon>search</mat-icon>
+      </button>
       <span class="spacer"></span>
-      <span style="margin-right:12px">{{ auth.getUsername() }}</span>
+      <span style="margin-right:12px">{{ auth.isLoggedIn() ? auth.getUsername() : '' }}</span>
       <button mat-icon-button (click)="auth.logout()" matTooltip="Logout">
         <mat-icon>logout</mat-icon>
       </button>

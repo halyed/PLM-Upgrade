@@ -1,5 +1,3 @@
-version: "3.9"
-
 # PLM Platform v2 — Full microservices stack
 # Run from repo root: docker compose -f infrastructure/docker/docker-compose.yml up
 
@@ -141,7 +139,7 @@ services:
       MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
       CONVERSION_SERVICE_URL: http://cad-service:5000
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      KEYCLOAK_ISSUER_URI: http://auth-service:8080/realms/plm
+      KEYCLOAK_JWK_SET_URI: http://auth-service:8080/realms/plm/protocol/openid-connect/certs
     depends_on:
       postgres:
         condition: service_healthy
@@ -173,21 +171,14 @@ services:
   # ─── Workflow Service (Camunda 8) ─────────────────────────────────────────
 
   camunda:
-    image: camunda/camunda-platform:8.4
+    image: camunda/zeebe:latest
     container_name: plm-camunda
     environment:
-      ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME: io.camunda.zeebe.exporter.ElasticsearchExporter
-      ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL: http://elasticsearch:9200
-      ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX: zeebe-record
-      CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS: camunda:26500
-      CAMUNDA_OPERATE_ELASTICSEARCH_URL: http://elasticsearch:9200
-      CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS: camunda:26500
-      CAMUNDA_TASKLIST_ELASTICSEARCH_URL: http://elasticsearch:9200
+      CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI: "true"
+      CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED: "false"
     ports:
       - "26500:26500"   # Zeebe gRPC
-      - "8088:8080"     # Operate UI
-    depends_on:
-      - elasticsearch
+      - "9600:9600"     # Zeebe monitoring REST
     restart: unless-stopped
 
   workflow-service:
@@ -196,8 +187,8 @@ services:
     ports:
       - "8082:8082"
     environment:
-      KEYCLOAK_ISSUER_URI: http://auth-service:8080/realms/plm
-      ZEEBE_GRPC_ADDRESS: http://camunda:26500
+      KEYCLOAK_JWK_SET_URI: http://auth-service:8080/realms/plm/protocol/openid-connect/certs
+      ZEEBE_ADDRESS: camunda:26500
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     depends_on:
       - camunda
@@ -213,7 +204,7 @@ services:
     ports:
       - "8083:8083"
     environment:
-      KEYCLOAK_ISSUER_URI: http://auth-service:8080/realms/plm
+      KEYCLOAK_JWK_SET_URI: http://auth-service:8080/realms/plm/protocol/openid-connect/certs
       ELASTICSEARCH_URIS: elasticsearch:9200
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     depends_on:
@@ -230,7 +221,7 @@ services:
     ports:
       - "8084:8084"
     environment:
-      KEYCLOAK_ISSUER_URI: http://auth-service:8080/realms/plm
+      KEYCLOAK_JWK_SET_URI: http://auth-service:8080/realms/plm/protocol/openid-connect/certs
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       # Enable connectors via env vars when credentials are available
       ODOO_ENABLED: ${ODOO_ENABLED:-false}

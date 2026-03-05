@@ -1,0 +1,208 @@
+{
+  "_instructions": {
+    "description": "Batch seed data for PLM platform. Execute steps in order — IDs from responses are needed for subsequent calls.",
+    "base_url": "http://localhost/api",
+    "auth": "Bearer <token from POST /realms/plm/protocol/openid-connect/token>",
+    "lifecycle_states": ["DRAFT", "IN_REVIEW", "RELEASED", "OBSOLETE"],
+    "revision_statuses": ["DRAFT", "IN_REVIEW", "APPROVED", "REJECTED"],
+    "cr_statuses": ["OPEN", "IN_REVIEW", "APPROVED", "CLOSED", "REJECTED"]
+  },
+
+  "step1_items": {
+    "endpoint": "POST /api/items",
+    "description": "Create all top-level and sub-assembly items",
+    "records": [
+      {
+        "_ref": "item_ev_battery_pack",
+        "itemNumber": "EV-BAT-001",
+        "name": "Electric Vehicle Battery Pack",
+        "description": "72 kWh lithium-ion battery pack assembly for EV platform",
+        "lifecycleState": "RELEASED"
+      },
+      {
+        "_ref": "item_battery_module",
+        "itemNumber": "EV-BAT-MOD-001",
+        "name": "Battery Module 18S4P",
+        "description": "Individual battery module — 18 cells in series, 4 in parallel",
+        "lifecycleState": "RELEASED"
+      },
+      {
+        "_ref": "item_bms",
+        "itemNumber": "EV-BMS-001",
+        "name": "Battery Management System",
+        "description": "BMS PCB — cell balancing, SOC estimation, thermal management",
+        "lifecycleState": "RELEASED"
+      },
+      {
+        "_ref": "item_cooling_plate",
+        "itemNumber": "EV-COOL-001",
+        "name": "Cooling Plate Assembly",
+        "description": "Aluminium liquid cooling plate for battery thermal regulation",
+        "lifecycleState": "IN_REVIEW"
+      },
+      {
+        "_ref": "item_pack_housing",
+        "itemNumber": "EV-HSG-001",
+        "name": "Battery Pack Housing",
+        "description": "Die-cast aluminium enclosure — IP67, crash-rated",
+        "lifecycleState": "RELEASED"
+      },
+      {
+        "_ref": "item_motor_assembly",
+        "itemNumber": "EV-MOT-001",
+        "name": "Rear Drive Motor Assembly",
+        "description": "250 kW permanent magnet synchronous motor with integrated inverter",
+        "lifecycleState": "RELEASED"
+      },
+      {
+        "_ref": "item_inverter",
+        "itemNumber": "EV-INV-001",
+        "name": "Power Inverter Module",
+        "description": "SiC MOSFET 3-phase inverter — 800V bus, 400A peak",
+        "lifecycleState": "RELEASED"
+      },
+      {
+        "_ref": "item_motor_stator",
+        "itemNumber": "EV-MOT-STA-001",
+        "name": "Motor Stator Assembly",
+        "description": "Hairpin wound stator — 48 slots, 8 poles",
+        "lifecycleState": "RELEASED"
+      },
+      {
+        "_ref": "item_motor_rotor",
+        "itemNumber": "EV-MOT-ROT-001",
+        "name": "Motor Rotor Assembly",
+        "description": "Interior permanent magnet rotor — NdFeB magnets",
+        "lifecycleState": "DRAFT"
+      },
+      {
+        "_ref": "item_chassis_frame",
+        "itemNumber": "EV-CHF-001",
+        "name": "Chassis Frame",
+        "description": "Skateboard platform chassis — high-strength steel + aluminium extrusions",
+        "lifecycleState": "RELEASED"
+      },
+      {
+        "_ref": "item_obc",
+        "itemNumber": "EV-OBC-001",
+        "name": "On-Board Charger",
+        "description": "11 kW AC on-board charger with CCS2 DC fast-charge support",
+        "lifecycleState": "IN_REVIEW"
+      },
+      {
+        "_ref": "item_dcdc",
+        "itemNumber": "EV-DCDC-001",
+        "name": "DC/DC Converter",
+        "description": "800V to 12V DC/DC converter — 3 kW continuous",
+        "lifecycleState": "RELEASED"
+      }
+    ]
+  },
+
+  "step2_revisions": {
+    "endpoint": "POST /api/items/{itemId}/revisions",
+    "description": "Create initial revisions for each item. Use item IDs returned in step 1.",
+    "records": [
+      { "_item_ref": "item_ev_battery_pack",  "revisionCode": "A", "status": "APPROVED" },
+      { "_item_ref": "item_ev_battery_pack",  "revisionCode": "B", "status": "APPROVED" },
+      { "_item_ref": "item_battery_module",   "revisionCode": "A", "status": "APPROVED" },
+      { "_item_ref": "item_bms",              "revisionCode": "A", "status": "APPROVED" },
+      { "_item_ref": "item_bms",              "revisionCode": "B", "status": "IN_REVIEW" },
+      { "_item_ref": "item_cooling_plate",    "revisionCode": "A", "status": "DRAFT" },
+      { "_item_ref": "item_pack_housing",     "revisionCode": "A", "status": "APPROVED" },
+      { "_item_ref": "item_motor_assembly",   "revisionCode": "A", "status": "APPROVED" },
+      { "_item_ref": "item_inverter",         "revisionCode": "A", "status": "APPROVED" },
+      { "_item_ref": "item_motor_stator",     "revisionCode": "A", "status": "APPROVED" },
+      { "_item_ref": "item_motor_rotor",      "revisionCode": "A", "status": "DRAFT" },
+      { "_item_ref": "item_chassis_frame",    "revisionCode": "A", "status": "APPROVED" },
+      { "_item_ref": "item_obc",              "revisionCode": "A", "status": "IN_REVIEW" },
+      { "_item_ref": "item_dcdc",             "revisionCode": "A", "status": "APPROVED" }
+    ]
+  },
+
+  "step3_bom_links": {
+    "endpoint": "POST /api/revisions/{parentRevisionId}/bom/children",
+    "description": "Build BOM hierarchy. Use revision IDs from step 2.",
+    "records": [
+      {
+        "_comment": "Battery Pack Rev B contains 12 modules, 1 BMS, 1 cooling plate, 1 housing",
+        "_parent_ref": "item_ev_battery_pack rev B",
+        "childRevisionId": "<id of item_battery_module rev A>",
+        "quantity": 12
+      },
+      {
+        "_parent_ref": "item_ev_battery_pack rev B",
+        "childRevisionId": "<id of item_bms rev A>",
+        "quantity": 1
+      },
+      {
+        "_parent_ref": "item_ev_battery_pack rev B",
+        "childRevisionId": "<id of item_cooling_plate rev A>",
+        "quantity": 1
+      },
+      {
+        "_parent_ref": "item_ev_battery_pack rev B",
+        "childRevisionId": "<id of item_pack_housing rev A>",
+        "quantity": 1
+      },
+      {
+        "_comment": "Motor Assembly Rev A contains stator, rotor, inverter",
+        "_parent_ref": "item_motor_assembly rev A",
+        "childRevisionId": "<id of item_motor_stator rev A>",
+        "quantity": 1
+      },
+      {
+        "_parent_ref": "item_motor_assembly rev A",
+        "childRevisionId": "<id of item_motor_rotor rev A>",
+        "quantity": 1
+      },
+      {
+        "_parent_ref": "item_motor_assembly rev A",
+        "childRevisionId": "<id of item_inverter rev A>",
+        "quantity": 1
+      }
+    ]
+  },
+
+  "step4_change_requests": {
+    "endpoint": "POST /api/change-requests",
+    "description": "Create change requests linked to items",
+    "records": [
+      {
+        "_ref": "cr_bms_update",
+        "title": "BMS firmware update — SOC algorithm improvement",
+        "description": "Update state-of-charge estimation algorithm to ML-based model. Reduces estimation error from ±3% to ±1%. Requires new PCB layout for additional MCU flash. Linked to BMS Rev B.",
+        "status": "IN_REVIEW",
+        "linkedItemId": "<id of item_bms>"
+      },
+      {
+        "_ref": "cr_cooling_redesign",
+        "title": "Cooling plate channel redesign for improved flow rate",
+        "description": "CFD analysis shows hotspots on cells 14-17 under 3C discharge. Redesign serpentine channels to equalise flow. Target: max cell delta-T < 3°C at peak load.",
+        "status": "OPEN",
+        "linkedItemId": "<id of item_cooling_plate>"
+      },
+      {
+        "_ref": "cr_rotor_magnets",
+        "title": "Rotor magnet supplier qualification — secondary source",
+        "description": "Qualify second NdFeB magnet supplier to mitigate supply chain risk. New supplier samples show equivalent magnetic properties (Br=1.35T, Hcj=2400 kA/m). Requires motor dyno validation.",
+        "status": "OPEN",
+        "linkedItemId": "<id of item_motor_rotor>"
+      },
+      {
+        "_ref": "cr_obc_approval",
+        "title": "OBC Rev A design freeze and release",
+        "description": "On-board charger has completed EMC pre-compliance testing (CISPR 25 Class 5). Final DV test report attached. Ready for release to production.",
+        "status": "IN_REVIEW",
+        "linkedItemId": "<id of item_obc>"
+      },
+      {
+        "_ref": "cr_chassis_weight",
+        "title": "Chassis frame mass reduction — topology optimisation",
+        "description": "FEA-guided topology optimisation identifies 8 kg saving potential in front subframe nodes. Proposal to switch 4 brackets from stamped steel to HPDC aluminium.",
+        "status": "OPEN",
+        "linkedItemId": "<id of item_chassis_frame>"
+      }
+    ]
+  }
+}

@@ -3,7 +3,7 @@
              xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
              xmlns:activiti="http://activiti.org/bpmn"
              targetNamespace="http://camunda.org/schema/1.0/bpmn"
-             id="revision-approval">
+             id="revision-approval-definitions">
 
   <process id="revision-approval" name="Revision Approval" isExecutable="true">
 
@@ -33,12 +33,12 @@
 
     <!-- Manager rejected → notify and end -->
     <sequenceFlow id="flow3-rejected" sourceRef="manager-gateway" targetRef="notify-rejected">
-      <conditionExpression>${managerDecision == 'REJECTED'}</conditionExpression>
+      <conditionExpression>=managerDecision = "REJECTED"</conditionExpression>
     </sequenceFlow>
 
     <!-- Manager approved → quality review -->
     <sequenceFlow id="flow3-approved" sourceRef="manager-gateway" targetRef="quality-review">
-      <conditionExpression>${managerDecision == 'APPROVED'}</conditionExpression>
+      <conditionExpression>=managerDecision = "APPROVED"</conditionExpression>
     </sequenceFlow>
 
     <!-- Task 2: Quality engineer reviews -->
@@ -59,11 +59,11 @@
     </exclusiveGateway>
 
     <sequenceFlow id="flow5-rejected" sourceRef="quality-gateway" targetRef="notify-rejected">
-      <conditionExpression>${qualityDecision == 'REJECTED'}</conditionExpression>
+      <conditionExpression>=qualityDecision = "REJECTED"</conditionExpression>
     </sequenceFlow>
 
     <sequenceFlow id="flow5-approved" sourceRef="quality-gateway" targetRef="release-revision">
-      <conditionExpression>${qualityDecision == 'APPROVED'}</conditionExpression>
+      <conditionExpression>=qualityDecision = "APPROVED"</conditionExpression>
     </sequenceFlow>
 
     <!-- Service Task: Auto-release revision via Kafka event -->

@@ -6,7 +6,7 @@ import lombok.Data;
 @Data
 public class StartWorkflowRequest {
 
-    @NotNull
+    // Set from path variable by the controller — not validated in request body
     private Long revisionId;
 
     @NotNull

@@ -84,6 +84,15 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Build and push search-service
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/search-service
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-search:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
       - name: Build and push workflow-service
         uses: docker/build-push-action@v5
         with:

@@ -205,6 +205,23 @@ services:
       - auth-service
     restart: unless-stopped
 
+  # ─── Search Service (Elasticsearch) ──────────────────────────────────────
+
+  search-service:
+    build: ../../services/search-service
+    container_name: plm-search-service
+    ports:
+      - "8083:8083"
+    environment:
+      KEYCLOAK_ISSUER_URI: http://auth-service:8080/realms/plm
+      ELASTICSEARCH_URIS: elasticsearch:9200
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    depends_on:
+      - elasticsearch
+      - kafka
+      - auth-service
+    restart: unless-stopped
+
   # ─── API Gateway ──────────────────────────────────────────────────────────
 
   api-gateway:

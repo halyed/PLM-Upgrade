@@ -1,6 +1,6 @@
 package com.plm.service;
 
-import com.plm.config.RabbitMqConfig;
+import com.plm.config.KafkaConfig;
 import com.plm.dto.ConversionMessage;
 import com.plm.dto.DocumentResponse;
 import com.plm.entity.ConversionStatus;
@@ -12,7 +12,7 @@ import com.plm.repository.RevisionRepository;
 import io.minio.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,7 +31,7 @@ public class DocumentService {
     private final DocumentRepository documentRepository;
     private final RevisionRepository revisionRepository;
     private final MinioClient minioClient;
-    private final RabbitTemplate rabbitTemplate;
+    private final KafkaTemplate<String, ConversionMessage> kafkaTemplate;
 
     @Value("${minio.bucket.raw}")
     private String rawBucket;
@@ -91,11 +91,8 @@ public class DocumentService {
         if (CONVERTIBLE.contains(extension)) {
             document.setConversionStatus(ConversionStatus.PENDING);
             document = documentRepository.save(document);
-            rabbitTemplate.convertAndSend(
-                    RabbitMqConfig.CONVERSION_EXCHANGE,
-                    RabbitMqConfig.CONVERSION_KEY,
-                    new ConversionMessage(document.getId(), revisionId, document.getFilePath(), originalFilename)
-            );
+            kafkaTemplate.send(KafkaConfig.CONVERSION_TOPIC,
+                    new ConversionMessage(document.getId(), revisionId, document.getFilePath(), originalFilename));
             log.info("Queued STEP→GLB conversion for document {}", document.getId());
         }
 

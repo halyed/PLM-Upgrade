@@ -1,6 +1,6 @@
 package com.plm.service;
 
-import com.plm.config.RabbitMqConfig;
+import com.plm.config.KafkaConfig;
 import com.plm.dto.ConversionMessage;
 import com.plm.entity.ConversionStatus;
 import com.plm.entity.Document;
@@ -8,10 +8,10 @@ import com.plm.repository.DocumentRepository;
 import io.minio.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.*;
+import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.LinkedMultiValueMap;
@@ -36,7 +36,7 @@ public class ConversionConsumer {
     @Value("${minio.bucket.gltf}")
     private String gltfBucket;
 
-    @RabbitListener(queues = RabbitMqConfig.CONVERSION_QUEUE)
+    @KafkaListener(topics = KafkaConfig.CONVERSION_TOPIC, groupId = "plm-core-service")
     @Transactional
     public void handleConversion(ConversionMessage msg) {
         Document document = documentRepository.findById(msg.documentId()).orElse(null);

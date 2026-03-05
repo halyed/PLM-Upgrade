@@ -1,66 +1,45 @@
-import { Injectable, signal } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Router } from '@angular/router';
-import { tap } from 'rxjs/operators';
-
-export interface AuthResponse {
-  token: string;
-  username: string;
-  role: string;
-}
+import { Injectable } from '@angular/core';
+import { KeycloakService } from 'keycloak-angular';
+import { KeycloakProfile } from 'keycloak-js';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private readonly TOKEN_KEY = 'plm_token';
-  private readonly USER_KEY = 'plm_user';
 
-  currentUser = signal<AuthResponse | null>(this.loadUser());
-
-  constructor(private http: HttpClient, private router: Router) {}
-
-  login(username: string, password: string) {
-    return this.http.post<AuthResponse>('/api/auth/login', { username, password }).pipe(
-      tap(res => this.persist(res))
-    );
-  }
-
-  register(username: string, email: string, password: string, role: string) {
-    return this.http.post<AuthResponse>('/api/auth/register', { username, email, password, role }).pipe(
-      tap(res => this.persist(res))
-    );
-  }
-
-  logout() {
-    localStorage.removeItem(this.TOKEN_KEY);
-    localStorage.removeItem(this.USER_KEY);
-    this.currentUser.set(null);
-    this.router.navigate(['/login']);
-  }
-
-  getToken(): string | null {
-    return localStorage.getItem(this.TOKEN_KEY);
-  }
+  constructor(private keycloak: KeycloakService) {}
 
   isLoggedIn(): boolean {
-    return !!this.getToken();
+    return this.keycloak.isLoggedIn();
+  }
+
+  getUsername(): string {
+    return this.keycloak.getUsername();
+  }
+
+  async getToken(): Promise<string> {
+    return this.keycloak.getToken();
+  }
+
+  async loadProfile(): Promise<KeycloakProfile> {
+    return this.keycloak.loadUserProfile();
+  }
+
+  hasRole(role: string): boolean {
+    return this.keycloak.isUserInRole(role);
   }
 
   isAdmin(): boolean {
-    return this.currentUser()?.role === 'ADMIN';
+    return this.hasRole('ADMIN');
   }
 
   isViewer(): boolean {
-    return this.currentUser()?.role === 'VIEWER';
+    return this.hasRole('VIEWER');
   }
 
-  private persist(res: AuthResponse) {
-    localStorage.setItem(this.TOKEN_KEY, res.token);
-    localStorage.setItem(this.USER_KEY, JSON.stringify(res));
-    this.currentUser.set(res);
+  login(): void {
+    this.keycloak.login({ redirectUri: window.location.origin });
   }
 
-  private loadUser(): AuthResponse | null {
-    const raw = localStorage.getItem(this.USER_KEY);
-    return raw ? JSON.parse(raw) : null;
+  logout(): void {
+    this.keycloak.logout(window.location.origin);
   }
 }

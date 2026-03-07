@@ -15,6 +15,7 @@ import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { ItemService } from '../../../core/services/item.service';
 import { Item, ItemRequest, LifecycleState } from '../../../core/models/item.model';
+import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-item-list',
@@ -66,6 +67,7 @@ export class ItemListComponent implements OnInit {
     private itemService: ItemService,
     private fb: FormBuilder,
     private snack: MatSnackBar,
+    public auth: AuthService,
   ) {}
 
   ngOnInit() { this.load(); }

@@ -1,8 +1,6 @@
 package com.plm.workflow.service;
 
-import com.plm.workflow.dto.StartWorkflowRequest;
-import com.plm.workflow.dto.WorkflowInstance;
-import com.plm.workflow.dto.WorkflowResponse;
+import com.plm.workflow.dto.*;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.Map;
 
 @Service
@@ -55,5 +54,36 @@ public class WorkflowService {
 
         return new WorkflowResponse(key, request.getRevisionId(), "STARTED",
                 "Approval workflow started — awaiting manager review");
+    }
+
+    public void completeTask(long jobKey, CompleteTaskRequest request) {
+        PendingTask task = store.findPendingTask(jobKey)
+                .orElseThrow(() -> new RuntimeException("Pending task not found: " + jobKey));
+
+        Map<String, Object> variables = new HashMap<>();
+        boolean approved = "APPROVED".equals(request.getDecision());
+
+        if ("MANAGER_REVIEW".equals(task.getTaskType())) {
+            variables.put("managerDecision", request.getDecision());
+            if (!approved && request.getComment() != null) {
+                variables.put("rejectionComment", request.getComment());
+            }
+            store.updateStatus(task.getProcessInstanceKey(), "RUNNING",
+                    approved ? "QUALITY_REVIEW" : "REJECTED");
+        } else {
+            variables.put("qualityDecision", request.getDecision());
+            if (!approved && request.getComment() != null) {
+                variables.put("rejectionComment", request.getComment());
+            }
+        }
+
+        store.removePendingTask(jobKey);
+
+        zeebeClient.newCompleteCommand(jobKey)
+                .variables(variables)
+                .send()
+                .join();
+
+        log.info("Completed task {} ({}) with decision={}", jobKey, task.getTaskType(), request.getDecision());
     }
 }

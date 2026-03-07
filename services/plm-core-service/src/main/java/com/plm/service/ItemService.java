@@ -19,6 +19,7 @@ import java.util.List;
 public class ItemService {
 
     private final ItemRepository itemRepository;
+    private final ItemEventPublisher eventPublisher;
 
     @Transactional(readOnly = true)
     public List<ItemResponse> getAllItems() {
@@ -47,7 +48,9 @@ public class ItemService {
                 .description(request.getDescription())
                 .lifecycleState(request.getLifecycleState() != null ? request.getLifecycleState() : LifecycleState.DRAFT)
                 .build();
-        return toResponse(itemRepository.save(item));
+        item = itemRepository.save(item);
+        eventPublisher.publishItemCreated(item);
+        return toResponse(item);
     }
 
     @Transactional
@@ -60,7 +63,9 @@ public class ItemService {
         item.setItemNumber(request.getItemNumber());
         item.setName(request.getName());
         item.setDescription(request.getDescription());
-        return toResponse(itemRepository.save(item));
+        item = itemRepository.save(item);
+        eventPublisher.publishItemUpdated(item);
+        return toResponse(item);
     }
 
     @Transactional
@@ -68,7 +73,9 @@ public class ItemService {
         Item item = findById(id);
         validateTransition(item.getLifecycleState(), newState);
         item.setLifecycleState(newState);
-        return toResponse(itemRepository.save(item));
+        item = itemRepository.save(item);
+        eventPublisher.publishLifecycleChanged(item);
+        return toResponse(item);
     }
 
     @Transactional(readOnly = true)
@@ -83,6 +90,7 @@ public class ItemService {
             throw new BadRequestException("Cannot delete a RELEASED item");
         }
         itemRepository.delete(item);
+        eventPublisher.publishItemDeleted(id, item.getItemNumber());
     }
 
     private void validateTransition(LifecycleState current, LifecycleState next) {

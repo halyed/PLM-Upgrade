@@ -14,6 +14,14 @@
         <mat-icon matListItemIcon>change_circle</mat-icon>
         <span matListItemTitle>Change Requests</span>
       </a>
+      <a mat-list-item routerLink="/workflows/tasks" routerLinkActive="active-link">
+        <mat-icon matListItemIcon>task_alt</mat-icon>
+        <span matListItemTitle>Task Inbox</span>
+      </a>
+      <a mat-list-item routerLink="/reports" routerLinkActive="active-link">
+        <mat-icon matListItemIcon>bar_chart</mat-icon>
+        <span matListItemTitle>Reports</span>
+      </a>
       <a mat-list-item routerLink="/integration" routerLinkActive="active-link">
         <mat-icon matListItemIcon>cable</mat-icon>
         <span matListItemTitle>Integrations</span>
@@ -39,7 +47,10 @@
         <mat-icon>search</mat-icon>
       </button>
       <span class="spacer"></span>
-      <span style="margin-right:12px">{{ auth.isLoggedIn() ? auth.getUsername() : '' }}</span>
+      <button mat-icon-button routerLink="/notifications" matTooltip="Notifications">
+        <mat-icon [matBadge]="unreadCount() > 0 ? unreadCount() : null" matBadgeColor="warn">notifications</mat-icon>
+      </button>
+      <span style="margin-right:12px;margin-left:8px">{{ auth.isLoggedIn() ? auth.getUsername() : '' }}</span>
       <button mat-icon-button (click)="auth.logout()" matTooltip="Logout">
         <mat-icon>logout</mat-icon>
       </button>

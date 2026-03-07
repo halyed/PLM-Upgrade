@@ -20,3 +20,7 @@ images:
     newTag: "1.0.0"
   - name: ghcr.io/halyed/plm-upgrade-api-gateway
     newTag: "1.0.0"
+  - name: ghcr.io/halyed/plm-upgrade-notification
+    newTag: "1.0.0"
+  - name: ghcr.io/halyed/plm-upgrade-reporting
+    newTag: "1.0.0"

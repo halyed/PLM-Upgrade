@@ -1,0 +1,66 @@
+<div class="page-container">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+    <h2>Reports</h2>
+    <button mat-stroked-button (click)="load()"><mat-icon>refresh</mat-icon> Refresh</button>
+  </div>
+
+  @if (loading()) {
+    <div style="text-align:center;padding:48px"><mat-spinner diameter="40" style="margin:auto"></mat-spinner></div>
+  } @else if (summary()) {
+    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:24px">
+      <mat-card style="flex:1;min-width:200px">
+        <mat-card-header><mat-card-title>Total Items</mat-card-title></mat-card-header>
+        <mat-card-content><div style="font-size:48px;font-weight:bold;color:#3f51b5">{{ summary()!.totalItems }}</div></mat-card-content>
+      </mat-card>
+      <mat-card style="flex:1;min-width:200px">
+        <mat-card-header><mat-card-title>Change Requests</mat-card-title></mat-card-header>
+        <mat-card-content><div style="font-size:48px;font-weight:bold;color:#ff9800">{{ summary()!.totalChangeRequests }}</div></mat-card-content>
+      </mat-card>
+    </div>
+
+    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:24px">
+      <mat-card style="flex:1;min-width:240px">
+        <mat-card-header><mat-card-title>Items by Lifecycle State</mat-card-title></mat-card-header>
+        <mat-card-content>
+          @for (entry of entries(summary()!.itemsByState); track entry[0]) {
+            <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f0f0">
+              <span class="status-chip {{ entry[0] }}">{{ entry[0] }}</span>
+              <strong>{{ entry[1] }}</strong>
+            </div>
+          }
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card style="flex:1;min-width:240px">
+        <mat-card-header><mat-card-title>Change Requests by Status</mat-card-title></mat-card-header>
+        <mat-card-content>
+          @for (entry of entries(summary()!.changeRequestsByStatus); track entry[0]) {
+            <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f0f0">
+              <span>{{ entry[0] }}</span>
+              <strong>{{ entry[1] }}</strong>
+            </div>
+          }
+          @if (entries(summary()!.changeRequestsByStatus).length === 0) {
+            <p style="color:#aaa">No change requests</p>
+          }
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Exports -->
+    <mat-card>
+      <mat-card-header><mat-card-title>Data Exports</mat-card-title></mat-card-header>
+      <mat-card-content style="display:flex;gap:12px;flex-wrap:wrap;padding-top:12px">
+        <button mat-raised-button color="primary" (click)="exportItems()">
+          <mat-icon>download</mat-icon> Export All Items (CSV)
+        </button>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input #bomRevId placeholder="Revision ID" style="border:1px solid #ddd;border-radius:4px;padding:8px;width:140px">
+          <button mat-stroked-button (click)="exportBom(bomRevId.value)">
+            <mat-icon>table_chart</mat-icon> Export BOM (Excel)
+          </button>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  }
+</div>

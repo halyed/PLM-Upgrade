@@ -10,6 +10,7 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import java.util.Map;
 
 /**
@@ -98,17 +99,76 @@ public class OdooConnector implements ExternalSystemConnector {
 
     private void updateOdooProduct(PlmEvent event) {
         log.info("[Odoo] Updating product for item {}", event.getItemNumber());
-        // In production: search by default_code then write() the updated fields
+        try {
+            JsonNode searchResult = callOdooRpc(Map.of(
+                "jsonrpc", "2.0", "method", "call",
+                "params", Map.of(
+                    "model", "product.template", "method", "search_read",
+                    "args", new Object[]{new Object[]{new Object[]{"default_code", "=", event.getItemNumber()}}},
+                    "kwargs", Map.of("fields", new String[]{"id"}, "limit", 1)
+                )
+            ));
+            var records = searchResult.path("result");
+            if (records.isArray() && records.size() > 0) {
+                int productId = records.get(0).path("id").asInt();
+                callOdooRpc(Map.of(
+                    "jsonrpc", "2.0", "method", "call",
+                    "params", Map.of(
+                        "model", "product.template", "method", "write",
+                        "args", new Object[]{new int[]{productId}, Map.of(
+                            "name", event.getName() != null ? event.getName() : "",
+                            "description", event.getDescription() != null ? event.getDescription() : ""
+                        )},
+                        "kwargs", Map.of()
+                    )
+                ));
+                log.info("[Odoo] Product updated for item {}", event.getItemNumber());
+            } else {
+                log.warn("[Odoo] Product not found for item {} — creating", event.getItemNumber());
+                createOdooProduct(event);
+            }
+        } catch (Exception e) {
+            log.error("[Odoo] Failed to update product for item {}: {}", event.getItemNumber(), e.getMessage());
+        }
     }
 
     private void releaseOdooProduct(PlmEvent event) {
-        log.info("[Odoo] Marking product {} revision {} as released", event.getItemNumber(), event.getRevisionCode());
-        // In production: update product state field or create a BOM version
+        log.info("[Odoo] Releasing product {} rev {}", event.getItemNumber(), event.getRevisionCode());
+        try {
+            JsonNode searchResult = callOdooRpc(Map.of(
+                "jsonrpc", "2.0", "method", "call",
+                "params", Map.of(
+                    "model", "product.template", "method", "search_read",
+                    "args", new Object[]{new Object[]{new Object[]{"default_code", "=", event.getItemNumber()}}},
+                    "kwargs", Map.of("fields", new String[]{"id"}, "limit", 1)
+                )
+            ));
+            var records = searchResult.path("result");
+            if (records.isArray() && records.size() > 0) {
+                int productId = records.get(0).path("id").asInt();
+                callOdooRpc(Map.of(
+                    "jsonrpc", "2.0", "method", "call",
+                    "params", Map.of(
+                        "model", "product.template", "method", "write",
+                        "args", new Object[]{new int[]{productId}, Map.of(
+                            "description_sale", "Released — Rev " + (event.getRevisionCode() != null ? event.getRevisionCode() : ""),
+                            "active", true
+                        )},
+                        "kwargs", Map.of()
+                    )
+                ));
+                log.info("[Odoo] Product released for item {} rev {}", event.getItemNumber(), event.getRevisionCode());
+            }
+        } catch (Exception e) {
+            log.error("[Odoo] Failed to release product for item {}: {}", event.getItemNumber(), e.getMessage());
+        }
     }
 
-    private void callOdooRpc(Object body) {
+    private JsonNode callOdooRpc(Object body) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        restTemplate.postForEntity(odooUrl + "/web/dataset/call_kw", new HttpEntity<>(body, headers), String.class);
+        var response = restTemplate.postForEntity(odooUrl + "/web/dataset/call_kw",
+                new HttpEntity<>(body, headers), JsonNode.class);
+        return response.getBody() != null ? response.getBody() : com.fasterxml.jackson.databind.node.NullNode.getInstance();
     }
 }

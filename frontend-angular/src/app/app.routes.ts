@@ -44,6 +44,21 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/integration/integration.component').then(m => m.IntegrationComponent),
       },
+      {
+        path: 'workflows/tasks',
+        loadComponent: () =>
+          import('./features/task-inbox/task-inbox.component').then(m => m.TaskInboxComponent),
+      },
+      {
+        path: 'reports',
+        loadComponent: () =>
+          import('./features/reports/reports.component').then(m => m.ReportsComponent),
+      },
+      {
+        path: 'notifications',
+        loadComponent: () =>
+          import('./features/notifications/notifications.component').then(m => m.NotificationsComponent),
+      },
     ],
   },
   { path: '**', redirectTo: '' },

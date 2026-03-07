@@ -1,8 +1,6 @@
 package com.plm.workflow.controller;
 
-import com.plm.workflow.dto.StartWorkflowRequest;
-import com.plm.workflow.dto.WorkflowInstance;
-import com.plm.workflow.dto.WorkflowResponse;
+import com.plm.workflow.dto.*;
 import com.plm.workflow.service.WorkflowInstanceStore;
 import com.plm.workflow.service.WorkflowService;
 import jakarta.validation.Valid;
@@ -46,5 +44,23 @@ public class WorkflowController {
     @GetMapping
     public ResponseEntity<List<WorkflowInstance>> getAll() {
         return ResponseEntity.ok(store.findAll());
+    }
+
+    @GetMapping("/tasks")
+    public ResponseEntity<List<PendingTask>> getPendingTasks() {
+        return ResponseEntity.ok(store.findAllPendingTasks());
+    }
+
+    @PostMapping("/tasks/{jobKey}/complete")
+    public ResponseEntity<Void> completeTask(
+            @PathVariable long jobKey,
+            @Valid @RequestBody CompleteTaskRequest request) {
+        try {
+            workflowService.completeTask(jobKey, request);
+            return ResponseEntity.ok().build();
+        } catch (RuntimeException e) {
+            log.error("Failed to complete task {}: {}", jobKey, e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
     }
 }

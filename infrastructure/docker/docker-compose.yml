@@ -71,6 +71,28 @@ services:
       - "6379:6379"
     restart: unless-stopped
 
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: plm-prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: plm-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.13.0
     container_name: plm-elasticsearch
@@ -240,6 +262,46 @@ services:
       - auth-service
     restart: unless-stopped
 
+  # ─── Notification Service ─────────────────────────────────────────────────
+
+  notification-service:
+    build: ../../services/notification-service
+    container_name: plm-notification-service
+    ports:
+      - "8085:8085"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-plm}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-plm_user}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-plm_pass}
+      KEYCLOAK_JWK_SET_URI: http://auth-service:8080/realms/plm/protocol/openid-connect/certs
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      NOTIFICATION_EMAIL_ENABLED: ${NOTIFICATION_EMAIL_ENABLED:-false}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    restart: unless-stopped
+
+  # ─── Reporting Service ─────────────────────────────────────────────────────
+
+  reporting-service:
+    build: ../../services/reporting-service
+    container_name: plm-reporting-service
+    ports:
+      - "8086:8086"
+    environment:
+      KEYCLOAK_JWK_SET_URI: http://auth-service:8080/realms/plm/protocol/openid-connect/certs
+      PLM_CORE_URL: http://plm-core-service:8080
+    depends_on:
+      - plm-core-service
+      - auth-service
+    restart: unless-stopped
+
   # ─── API Gateway ──────────────────────────────────────────────────────────
 
   api-gateway:
@@ -269,3 +331,4 @@ volumes:
   minio_data:
   es_data:
   keycloak_db_data:
+  grafana_data:

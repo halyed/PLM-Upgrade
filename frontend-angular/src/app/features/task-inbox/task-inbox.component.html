@@ -1,0 +1,88 @@
+<div class="page-container">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+    <h2>Task Inbox</h2>
+    <button mat-stroked-button (click)="load()"><mat-icon>refresh</mat-icon> Refresh</button>
+  </div>
+
+  @if (loading()) {
+    <div style="text-align:center;padding:48px"><mat-spinner diameter="40" style="margin:auto"></mat-spinner></div>
+  } @else if (tasks().length === 0) {
+    <div style="text-align:center;color:#aaa;padding:48px">
+      <mat-icon style="font-size:48px;height:48px;width:48px">task_alt</mat-icon>
+      <p>No pending tasks. All approvals are up to date.</p>
+    </div>
+  } @else {
+    <p style="color:#666;margin-bottom:8px">{{ tasks().length }} task(s) awaiting your action</p>
+    <table mat-table [dataSource]="tasks()" style="width:100%">
+
+      <ng-container matColumnDef="taskType">
+        <th mat-header-cell *matHeaderCellDef>Task</th>
+        <td mat-cell *matCellDef="let t">
+          <span [class]="'status-chip ' + t.taskType">
+            {{ t.taskType === 'MANAGER_REVIEW' ? 'Manager Review' : 'Quality Review' }}
+          </span>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="itemName">
+        <th mat-header-cell *matHeaderCellDef>Item</th>
+        <td mat-cell *matCellDef="let t"><strong>{{ t.itemName }}</strong></td>
+      </ng-container>
+
+      <ng-container matColumnDef="revisionCode">
+        <th mat-header-cell *matHeaderCellDef>Revision</th>
+        <td mat-cell *matCellDef="let t">Rev {{ t.revisionCode }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="submittedBy">
+        <th mat-header-cell *matHeaderCellDef>Submitted By</th>
+        <td mat-cell *matCellDef="let t">{{ t.submittedBy }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="createdAt">
+        <th mat-header-cell *matHeaderCellDef>Received</th>
+        <td mat-cell *matCellDef="let t" style="font-size:12px;color:#666">
+          {{ t.createdAt | date:'short' }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef></th>
+        <td mat-cell *matCellDef="let t">
+          <button mat-stroked-button color="primary" (click)="openForm(t.jobKey)"
+                  [disabled]="activeJobKey === t.jobKey">
+            Review
+          </button>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="columns"></tr>
+      <tr mat-row *matRowDef="let row; columns: columns;"></tr>
+    </table>
+
+    @if (activeJobKey !== null) {
+      <div style="margin-top:24px;padding:20px;border:1px solid #e0e0e0;border-radius:8px;max-width:480px">
+        <h3 style="margin-top:0">Submit Decision</h3>
+        <mat-form-field appearance="outline" style="width:100%">
+          <mat-label>Decision</mat-label>
+          <mat-select [(ngModel)]="decision">
+            <mat-option value="APPROVED">Approve</mat-option>
+            <mat-option value="REJECTED">Reject</mat-option>
+          </mat-select>
+        </mat-form-field>
+        @if (decision === 'REJECTED') {
+          <mat-form-field appearance="outline" style="width:100%;margin-top:8px">
+            <mat-label>Rejection reason</mat-label>
+            <textarea matInput [(ngModel)]="comment" rows="3"></textarea>
+          </mat-form-field>
+        }
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button mat-raised-button color="primary" (click)="submit()" [disabled]="submitting()">
+            {{ submitting() ? 'Submitting…' : 'Submit' }}
+          </button>
+          <button mat-stroked-button (click)="cancelForm()">Cancel</button>
+        </div>
+      </div>
+    }
+  }
+</div>

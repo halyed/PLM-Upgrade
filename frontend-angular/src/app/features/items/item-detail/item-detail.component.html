@@ -10,7 +10,7 @@
         <span class="status-chip {{ item.lifecycleState }}">{{ item.lifecycleState }}</span>
         <span style="color:#666;font-size:13px">Updated: {{ item.updatedAt | date:'medium' }}</span>
         <span class="spacer"></span>
-        <mat-select placeholder="Transition lifecycle" style="width:200px" (selectionChange)="transitionLifecycle($event.value)">
+        <mat-select *ngIf="!auth.isViewer()" placeholder="Transition lifecycle" style="width:200px" (selectionChange)="transitionLifecycle($event.value)">
           <mat-option value="IN_REVIEW">-> IN_REVIEW</mat-option>
           <mat-option value="RELEASED">-> RELEASED</mat-option>
           <mat-option value="OBSOLETE">-> OBSOLETE</mat-option>
@@ -25,7 +25,7 @@
     <mat-expansion-panel-header>
       <mat-panel-title>Revisions ({{ revisions().length }})</mat-panel-title>
     </mat-expansion-panel-header>
-    <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
+    <div *ngIf="!auth.isViewer()" style="display:flex;justify-content:flex-end;margin-bottom:8px">
       <button mat-raised-button color="accent" (click)="nextRevision()">
         <mat-icon>add</mat-icon> Next Revision
       </button>
@@ -38,9 +38,13 @@
       <ng-container matColumnDef="status">
         <th mat-header-cell *matHeaderCellDef>Status</th>
         <td mat-cell *matCellDef="let r">
-          <mat-select [value]="r.status" (selectionChange)="updateRevStatus(r, $event.value)" style="font-size:13px">
-            <mat-option *ngFor="let s of revisionStatuses" [value]="s">{{ s }}</mat-option>
-          </mat-select>
+          @if (!auth.isViewer()) {
+            <mat-select [value]="r.status" (selectionChange)="updateRevStatus(r, $event.value)" style="font-size:13px">
+              <mat-option *ngFor="let s of revisionStatuses" [value]="s">{{ s }}</mat-option>
+            </mat-select>
+          } @else {
+            <span class="status-chip">{{ r.status }}</span>
+          }
         </td>
       </ng-container>
       <ng-container matColumnDef="createdAt">
@@ -54,7 +58,7 @@
                   [style.font-weight]="selectedRevision()?.id === r.id ? 'bold' : 'normal'">
             {{ selectedRevision()?.id === r.id ? '● Selected' : 'Select' }}
           </button>
-          <button mat-icon-button color="accent" (click)="startApproval(r)"
+          <button *ngIf="!auth.isViewer()" mat-icon-button color="accent" (click)="startApproval(r)"
                   matTooltip="Start approval workflow">
             <mat-icon>play_circle</mat-icon>
           </button>
@@ -108,7 +112,7 @@
         <mat-panel-title>BOM — Rev {{ selectedRevision()?.revisionCode }} ({{ bomChildren().length }} children)</mat-panel-title>
       </mat-expansion-panel-header>
 
-      <form [formGroup]="bomForm" (ngSubmit)="addBomChild()" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+      <form *ngIf="!auth.isViewer()" [formGroup]="bomForm" (ngSubmit)="addBomChild()" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
         <mat-form-field appearance="outline" style="flex:1;min-width:160px">
           <mat-label>Item</mat-label>
           <mat-select formControlName="childItemId" (selectionChange)="onBomItemChange($event.value)">
@@ -162,7 +166,7 @@
         <mat-panel-title>Documents — Rev {{ selectedRevision()?.revisionCode }} ({{ documents().length }})</mat-panel-title>
       </mat-expansion-panel-header>
 
-      <div style="margin-bottom:12px">
+      <div *ngIf="!auth.isViewer()" style="margin-bottom:12px">
         <label>
           <input type="file" hidden (change)="uploadFile($event)">
           <button mat-raised-button color="accent" component="label" onclick="this.previousElementSibling.click()">
@@ -199,7 +203,7 @@
             <button mat-icon-button matTooltip="Download" (click)="downloadDoc(d)">
               <mat-icon>download</mat-icon>
             </button>
-            <button mat-icon-button color="warn" (click)="deleteDoc(d)" matTooltip="Delete"><mat-icon>delete</mat-icon></button>
+            <button *ngIf="!auth.isViewer()" mat-icon-button color="warn" (click)="deleteDoc(d)" matTooltip="Delete"><mat-icon>delete</mat-icon></button>
           </td>
         </ng-container>
         <tr mat-header-row *matHeaderRowDef="docCols"></tr>

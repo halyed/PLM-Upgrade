@@ -1,0 +1,32 @@
+<div class="page-container">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+    <h2>Notifications</h2>
+    <div style="display:flex;gap:8px">
+      <button mat-stroked-button (click)="markAllRead()"><mat-icon>done_all</mat-icon> Mark all read</button>
+      <button mat-stroked-button (click)="load()"><mat-icon>refresh</mat-icon> Refresh</button>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div style="text-align:center;padding:48px"><mat-spinner diameter="40" style="margin:auto"></mat-spinner></div>
+  } @else if (notifications().length === 0) {
+    <div style="text-align:center;color:#aaa;padding:48px">
+      <mat-icon style="font-size:48px;height:48px;width:48px">notifications_none</mat-icon>
+      <p>No notifications yet.</p>
+    </div>
+  } @else {
+    <mat-list>
+      @for (n of notifications(); track n.id) {
+        <mat-list-item
+          (click)="markRead(n)"
+          style="cursor:pointer;border-bottom:1px solid #f0f0f0"
+          [style.background]="n.read ? 'transparent' : '#e8eaf6'">
+          <mat-icon matListItemIcon [style.color]="n.read ? '#aaa' : '#3f51b5'">{{ typeIcon(n.type) }}</mat-icon>
+          <span matListItemTitle [style.font-weight]="n.read ? 'normal' : '600'">{{ n.title }}</span>
+          <span matListItemLine style="color:#666">{{ n.message }}</span>
+          <span matListItemLine style="font-size:11px;color:#aaa">{{ n.createdAt | date:'medium' }}</span>
+        </mat-list-item>
+      }
+    </mat-list>
+  }
+</div>

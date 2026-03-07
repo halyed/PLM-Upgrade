@@ -7,7 +7,7 @@
       <mat-icon matPrefix>search</mat-icon>
       <input matInput (input)="onSearch($any($event.target).value)" placeholder="Item #, name, description…">
     </mat-form-field>
-    <button mat-raised-button color="primary" (click)="openCreate()">
+    <button *ngIf="!auth.isViewer()" mat-raised-button color="primary" (click)="openCreate()">
       <mat-icon>add</mat-icon> New Item
     </button>
   </div>
@@ -75,10 +75,10 @@
             <a mat-icon-button [routerLink]="['/items', row.id]" matTooltip="View">
               <mat-icon>visibility</mat-icon>
             </a>
-            <button mat-icon-button (click)="openEdit(row)" matTooltip="Edit">
+            <button *ngIf="!auth.isViewer()" mat-icon-button (click)="openEdit(row)" matTooltip="Edit">
               <mat-icon>edit</mat-icon>
             </button>
-            <button mat-icon-button color="warn" (click)="delete(row)" matTooltip="Delete">
+            <button *ngIf="!auth.isViewer()" mat-icon-button color="warn" (click)="delete(row)" matTooltip="Delete">
               <mat-icon>delete</mat-icon>
             </button>
           </td>

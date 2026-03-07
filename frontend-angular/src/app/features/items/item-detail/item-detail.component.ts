@@ -76,7 +76,7 @@ export class ItemDetailComponent implements OnInit, OnDestroy {
     private documentService: DocumentService,
     private wsService: WebSocketService,
     private workflowService: WorkflowService,
-    private auth: AuthService,
+    public auth: AuthService,
     private fb: FormBuilder,
     private snack: MatSnackBar,
   ) {}

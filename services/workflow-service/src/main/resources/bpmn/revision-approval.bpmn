@@ -14,14 +14,14 @@
 
     <sequenceFlow id="flow1" sourceRef="start" targetRef="manager-review"/>
 
-    <!-- Task 1: Manager reviews the design -->
-    <userTask id="manager-review" name="Manager Review">
+    <!-- Task 1: Manager reviews the design (service task — worker pauses, REST completes) -->
+    <serviceTask id="manager-review" name="Manager Review">
       <extensionElements>
-        <zeebe:assignmentDefinition candidateGroups="manager"/>
+        <zeebe:taskDefinition type="manager-review-task"/>
       </extensionElements>
       <incoming>flow1</incoming>
       <outgoing>flow2</outgoing>
-    </userTask>
+    </serviceTask>
 
     <sequenceFlow id="flow2" sourceRef="manager-review" targetRef="manager-gateway"/>
 
@@ -41,14 +41,14 @@
       <conditionExpression>=managerDecision = "APPROVED"</conditionExpression>
     </sequenceFlow>
 
-    <!-- Task 2: Quality engineer reviews -->
-    <userTask id="quality-review" name="Quality Approval">
+    <!-- Task 2: Quality engineer reviews (service task — worker pauses, REST completes) -->
+    <serviceTask id="quality-review" name="Quality Approval">
       <extensionElements>
-        <zeebe:assignmentDefinition candidateGroups="quality"/>
+        <zeebe:taskDefinition type="quality-review-task"/>
       </extensionElements>
       <incoming>flow3-approved</incoming>
       <outgoing>flow4</outgoing>
-    </userTask>
+    </serviceTask>
 
     <sequenceFlow id="flow4" sourceRef="quality-review" targetRef="quality-gateway"/>
 

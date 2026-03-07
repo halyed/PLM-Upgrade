@@ -17,5 +17,7 @@ resources:
   - workflow-service.yaml
   - search-service.yaml
   - integration-service.yaml
+  - notification-service.yaml
+  - reporting-service.yaml
   - frontend.yaml
   - api-gateway.yaml

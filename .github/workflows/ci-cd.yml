@@ -174,19 +174,24 @@ jobs:
           cache-to: type=gha,mode=max
 
   # ─── Deploy ─────────────────────────────────────────────────────────────────
+  # Required GitHub Secrets:
+  #   VPS_HOST      — OVH VPS IP or hostname
+  #   VPS_USER      — SSH user (e.g. ubuntu or root)
+  #   VPS_SSH_KEY   — Private SSH key (paste the full PEM content)
 
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     steps:
-      - name: Deploy to EC2
+      - name: Deploy to OVH VPS
         uses: appleboy/ssh-action@v1
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             cd /opt/plm-upgrade
+            git pull origin main
             docker compose -f infrastructure/docker/docker-compose.yml pull
-            docker compose -f infrastructure/docker/docker-compose.yml up -d --remove-orphans
+            docker compose -f infrastructure/docker/docker-compose.yml up -d --build --remove-orphans

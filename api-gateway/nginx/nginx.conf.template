@@ -1,0 +1,162 @@
+worker_processes 1;
+
+events {
+    worker_connections 1024;
+}
+
+http {
+    # ── HTTP: certbot challenge + redirect to HTTPS ───────────────────────────
+    server {
+        listen 80;
+        server_name ${DOMAIN};
+
+        location /.well-known/acme-challenge/ {
+            root /var/www/certbot;
+        }
+
+        location / {
+            return 301 https://$host$request_uri;
+        }
+    }
+
+    # ── HTTPS ─────────────────────────────────────────────────────────────────
+    server {
+        listen 443 ssl;
+        server_name ${DOMAIN};
+
+        ssl_certificate     /etc/letsencrypt/live/${DOMAIN}/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/${DOMAIN}/privkey.pem;
+        ssl_protocols       TLSv1.2 TLSv1.3;
+        ssl_ciphers         HIGH:!aNULL:!MD5;
+        ssl_session_cache   shared:SSL:10m;
+        ssl_session_timeout 10m;
+
+        # Docker internal DNS
+        resolver 127.0.0.11 valid=30s ipv6=off;
+
+        # Strip trailing slashes (Spring Boot 3)
+        rewrite ^(/api/[^/]+)/+$ $1 last;
+
+        # ── Runtime config for Angular (Keycloak URL) ──────────────────────
+        location = /env.js {
+            default_type application/javascript;
+            add_header Cache-Control "no-store";
+            return 200 'window.__env = { keycloakUrl: "https://${DOMAIN}/auth" };';
+        }
+
+        # ── Keycloak (proxied at /auth/) ────────────────────────────────────
+        location /auth/ {
+            set $upstream http://auth-service:8080;
+            proxy_pass $upstream;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_buffer_size 64k;
+            proxy_buffers 8 64k;
+        }
+
+        # ── PLM Core ────────────────────────────────────────────────────────
+        location /api/items {
+            set $upstream http://plm-core-service:8080;
+            proxy_pass $upstream;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+        location /api/revisions {
+            set $upstream http://plm-core-service:8080;
+            proxy_pass $upstream;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+        location /api/change-requests {
+            set $upstream http://plm-core-service:8080;
+            proxy_pass $upstream;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+        location /api/documents {
+            set $upstream http://plm-core-service:8080;
+            proxy_pass $upstream;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            client_max_body_size 200m;
+        }
+        location /api/audit-logs {
+            set $upstream http://plm-core-service:8080;
+            proxy_pass $upstream;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        # ── Other services ──────────────────────────────────────────────────
+        location /api/workflows {
+            set $upstream http://workflow-service:8082;
+            proxy_pass $upstream;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_read_timeout 30s;
+        }
+        location /api/search {
+            set $upstream http://search-service:8083;
+            proxy_pass $upstream;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+        location /api/integration {
+            set $upstream http://integration-service:8084;
+            proxy_pass $upstream;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+        location /api/notifications {
+            set $upstream http://notification-service:8085;
+            proxy_pass $upstream;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+        location /ws-notifications {
+            set $upstream http://notification-service:8085;
+            proxy_pass $upstream;
+            proxy_set_header Host $host;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+        location /api/reports {
+            set $upstream http://reporting-service:8086;
+            proxy_pass $upstream;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+        location /api/cad {
+            set $upstream http://cad-service:5000;
+            proxy_pass $upstream;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        # ── Frontend (inject env.js into HTML) ─────────────────────────────
+        location / {
+            set $upstream http://frontend-angular:80;
+            proxy_pass $upstream;
+            proxy_set_header Host $host;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+            proxy_set_header Accept-Encoding "";
+            sub_filter '</head>' '<script src="/env.js"></script></head>';
+            sub_filter_once on;
+        }
+    }
+}

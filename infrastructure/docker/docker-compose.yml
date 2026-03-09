@@ -135,6 +135,10 @@ services:
       KC_DB_URL: jdbc:postgresql://keycloak-db:5432/keycloak
       KC_DB_USERNAME: ${KC_DB_USER:-keycloak}
       KC_DB_PASSWORD: ${KC_DB_PASSWORD:-keycloak}
+      # Production: proxy headers + relative path so Keycloak works behind nginx /auth/
+      KC_PROXY_HEADERS: ${KC_PROXY_HEADERS:-}
+      KC_HTTP_RELATIVE_PATH: ${KC_HTTP_RELATIVE_PATH:-/}
+      KC_HOSTNAME_URL: ${KC_HOSTNAME_URL:-}
     volumes:
       - ../../services/auth-service/realm-export.json:/opt/keycloak/data/import/realm-export.json
     ports:
@@ -309,10 +313,25 @@ services:
     container_name: plm-api-gateway
     ports:
       - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+    volumes:
+      - letsencrypt_data:/etc/letsencrypt:ro
+      - certbot_webroot:/var/www/certbot:ro
     depends_on:
       - plm-core-service
       - auth-service
       - cad-service
+    restart: unless-stopped
+
+  certbot:
+    image: certbot/certbot:latest
+    container_name: plm-certbot
+    volumes:
+      - letsencrypt_data:/etc/letsencrypt
+      - certbot_webroot:/var/www/certbot
+    entrypoint: /bin/sh -c "trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot --quiet; sleep 12h & wait $${!}; done"
     restart: unless-stopped
 
   # ─── Frontend ─────────────────────────────────────────────────────────────
@@ -332,3 +351,5 @@ volumes:
   es_data:
   keycloak_db_data:
   grafana_data:
+  letsencrypt_data:
+  certbot_webroot:

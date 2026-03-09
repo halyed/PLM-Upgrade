@@ -194,4 +194,4 @@ jobs:
             cd /opt/plm-upgrade
             git pull origin main
             docker compose -f infrastructure/docker/docker-compose.yml pull
-            docker compose -f infrastructure/docker/docker-compose.yml up -d --build --remove-orphans
+            docker compose -f infrastructure/docker/docker-compose.yml up -d --remove-orphans

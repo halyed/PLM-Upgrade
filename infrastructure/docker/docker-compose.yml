@@ -152,6 +152,7 @@ services:
 
   plm-core-service:
     build: ../../services/plm-core-service
+    image: ghcr.io/halyed/plm-upgrade-plm-core:latest
     container_name: plm-core-service
     ports:
       - "127.0.0.1:8080:8080"
@@ -183,6 +184,7 @@ services:
 
   cad-service:
     build: ../../services/cad-service
+    image: ghcr.io/halyed/plm-upgrade-cad:latest
     container_name: plm-cad-service
     ports:
       - "127.0.0.1:5000:5000"
@@ -209,6 +211,7 @@ services:
 
   workflow-service:
     build: ../../services/workflow-service
+    image: ghcr.io/halyed/plm-upgrade-workflow:latest
     container_name: plm-workflow-service
     ports:
       - "127.0.0.1:8082:8082"
@@ -226,6 +229,7 @@ services:
 
   search-service:
     build: ../../services/search-service
+    image: ghcr.io/halyed/plm-upgrade-search:latest
     container_name: plm-search-service
     ports:
       - "127.0.0.1:8083:8083"
@@ -243,6 +247,7 @@ services:
 
   integration-service:
     build: ../../services/integration-service
+    image: ghcr.io/halyed/plm-upgrade-integration:latest
     container_name: plm-integration-service
     ports:
       - "127.0.0.1:8084:8084"
@@ -270,6 +275,7 @@ services:
 
   notification-service:
     build: ../../services/notification-service
+    image: ghcr.io/halyed/plm-upgrade-notification:latest
     container_name: plm-notification-service
     ports:
       - "127.0.0.1:8085:8085"
@@ -295,6 +301,7 @@ services:
 
   reporting-service:
     build: ../../services/reporting-service
+    image: ghcr.io/halyed/plm-upgrade-reporting:latest
     container_name: plm-reporting-service
     ports:
       - "127.0.0.1:8086:8086"
@@ -325,6 +332,7 @@ services:
 
   frontend-angular:
     build: ../../frontend-angular
+    image: ghcr.io/halyed/plm-upgrade-frontend:latest
     container_name: plm-frontend
     ports:
       - "127.0.0.1:4200:80"

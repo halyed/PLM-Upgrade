@@ -1,7 +1,15 @@
-# Use the official pre-built pythonocc image — avoids heavy conda install on VPS
-FROM tpaviot/pythonocc-core:7.7.2
+FROM python:3.10-slim
 
-RUN pip install --no-cache-dir flask==3.0.2 trimesh==4.2.4 numpy==1.26.4
+# pythonocc-core needs some system GL libs (headless OK)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      libgl1 libglu1-mesa libxext6 libx11-6 \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --no-cache-dir \
+      pythonocc-core==7.7.2 \
+      flask==3.0.2 \
+      trimesh==4.2.4 \
+      numpy==1.26.4
 
 WORKDIR /app
 COPY app.py converter.py ./

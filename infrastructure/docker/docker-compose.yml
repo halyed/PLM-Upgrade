@@ -329,7 +329,7 @@ services:
     ports:
       - "127.0.0.1:4200:80"
     depends_on:
-      - api-gateway
+      - plm-core-service
     restart: unless-stopped
 
 volumes:

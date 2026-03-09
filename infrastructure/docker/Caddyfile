@@ -1,0 +1,49 @@
+# PLM Platform — Caddyfile
+# Place this on your VPS at /etc/caddy/Caddyfile (or wherever Caddy reads it)
+# Replace YOUR_DOMAIN with your actual DuckDNS domain (e.g. myplm.duckdns.org)
+# Caddy handles HTTPS + Let's Encrypt automatically — no certbot needed.
+
+YOUR_DOMAIN {
+
+    # ── Runtime config for Angular (injects Keycloak URL without rebuilding) ──
+    handle /env.js {
+        header Content-Type application/javascript
+        header Cache-Control no-store
+        respond `window.__env = { keycloakUrl: "https://YOUR_DOMAIN/auth" };`
+    }
+
+    # ── Keycloak (proxied at /auth/) ──────────────────────────────────────────
+    handle /auth/* {
+        reverse_proxy localhost:8081 {
+            header_up X-Forwarded-Proto {scheme}
+            header_up X-Forwarded-Host  {host}
+            header_up X-Real-IP         {remote_host}
+        }
+    }
+
+    # ── WebSocket (notifications) ─────────────────────────────────────────────
+    handle /ws-notifications* {
+        reverse_proxy localhost:8085 {
+            header_up Upgrade    {>Upgrade}
+            header_up Connection {>Connection}
+        }
+    }
+
+    # ── API routes ────────────────────────────────────────────────────────────
+    handle /api/items*          { reverse_proxy localhost:8080 }
+    handle /api/revisions*      { reverse_proxy localhost:8080 }
+    handle /api/change-requests* { reverse_proxy localhost:8080 }
+    handle /api/documents*      { reverse_proxy localhost:8080 }
+    handle /api/audit-logs*     { reverse_proxy localhost:8080 }
+    handle /api/workflows*      { reverse_proxy localhost:8082 }
+    handle /api/search*         { reverse_proxy localhost:8083 }
+    handle /api/integration*    { reverse_proxy localhost:8084 }
+    handle /api/notifications*  { reverse_proxy localhost:8085 }
+    handle /api/reports*        { reverse_proxy localhost:8086 }
+    handle /api/cad*            { reverse_proxy localhost:5000  }
+
+    # ── Angular frontend (catch-all) ──────────────────────────────────────────
+    handle {
+        reverse_proxy localhost:4200
+    }
+}

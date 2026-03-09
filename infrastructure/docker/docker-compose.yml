@@ -135,14 +135,14 @@ services:
       KC_DB_URL: jdbc:postgresql://keycloak-db:5432/keycloak
       KC_DB_USERNAME: ${KC_DB_USER:-keycloak}
       KC_DB_PASSWORD: ${KC_DB_PASSWORD:-keycloak}
-      # Production: proxy headers + relative path so Keycloak works behind nginx /auth/
+      # Production (Caddy): proxy headers so Keycloak knows the real scheme/host
       KC_PROXY_HEADERS: ${KC_PROXY_HEADERS:-}
       KC_HTTP_RELATIVE_PATH: ${KC_HTTP_RELATIVE_PATH:-/}
       KC_HOSTNAME_URL: ${KC_HOSTNAME_URL:-}
     volumes:
       - ../../services/auth-service/realm-export.json:/opt/keycloak/data/import/realm-export.json
     ports:
-      - "8081:8080"
+      - "127.0.0.1:8081:8080"
     depends_on:
       keycloak-db:
         condition: service_healthy
@@ -154,7 +154,7 @@ services:
     build: ../../services/plm-core-service
     container_name: plm-core-service
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-plm}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-plm_user}
@@ -185,7 +185,7 @@ services:
     build: ../../services/cad-service
     container_name: plm-cad-service
     ports:
-      - "5000:5000"
+      - "127.0.0.1:5000:5000"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
       interval: 10s
@@ -211,7 +211,7 @@ services:
     build: ../../services/workflow-service
     container_name: plm-workflow-service
     ports:
-      - "8082:8082"
+      - "127.0.0.1:8082:8082"
     environment:
       KEYCLOAK_JWK_SET_URI: http://auth-service:8080/realms/plm/protocol/openid-connect/certs
       ZEEBE_ADDRESS: camunda:26500
@@ -228,7 +228,7 @@ services:
     build: ../../services/search-service
     container_name: plm-search-service
     ports:
-      - "8083:8083"
+      - "127.0.0.1:8083:8083"
     environment:
       KEYCLOAK_JWK_SET_URI: http://auth-service:8080/realms/plm/protocol/openid-connect/certs
       ELASTICSEARCH_URIS: elasticsearch:9200
@@ -245,7 +245,7 @@ services:
     build: ../../services/integration-service
     container_name: plm-integration-service
     ports:
-      - "8084:8084"
+      - "127.0.0.1:8084:8084"
     environment:
       KEYCLOAK_JWK_SET_URI: http://auth-service:8080/realms/plm/protocol/openid-connect/certs
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
@@ -272,7 +272,7 @@ services:
     build: ../../services/notification-service
     container_name: plm-notification-service
     ports:
-      - "8085:8085"
+      - "127.0.0.1:8085:8085"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-plm}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-plm_user}
@@ -297,7 +297,7 @@ services:
     build: ../../services/reporting-service
     container_name: plm-reporting-service
     ports:
-      - "8086:8086"
+      - "127.0.0.1:8086:8086"
     environment:
       KEYCLOAK_JWK_SET_URI: http://auth-service:8080/realms/plm/protocol/openid-connect/certs
       PLM_CORE_URL: http://plm-core-service:8080
@@ -308,31 +308,18 @@ services:
 
   # ─── API Gateway ──────────────────────────────────────────────────────────
 
-  api-gateway:
-    build: ../../api-gateway
-    container_name: plm-api-gateway
-    ports:
-      - "80:80"
-      - "443:443"
-    environment:
-      DOMAIN: ${DOMAIN:-localhost}
-    volumes:
-      - letsencrypt_data:/etc/letsencrypt:ro
-      - certbot_webroot:/var/www/certbot:ro
-    depends_on:
-      - plm-core-service
-      - auth-service
-      - cad-service
-    restart: unless-stopped
-
-  certbot:
-    image: certbot/certbot:latest
-    container_name: plm-certbot
-    volumes:
-      - letsencrypt_data:/etc/letsencrypt
-      - certbot_webroot:/var/www/certbot
-    entrypoint: /bin/sh -c "trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot --quiet; sleep 12h & wait $${!}; done"
-    restart: unless-stopped
+  # ─── API Gateway ──────────────────────────────────────────────────────────
+  # When using Caddy on the host: Caddy proxies directly to each service port.
+  # The nginx api-gateway is not needed — it is disabled below.
+  # To re-enable nginx (e.g. for local dev without Caddy), uncomment and comment out
+  # the individual port bindings on each service above.
+  #
+  # api-gateway:
+  #   build: ../../api-gateway
+  #   container_name: plm-api-gateway
+  #   ports:
+  #     - "127.0.0.1:8000:80"
+  #   restart: unless-stopped
 
   # ─── Frontend ─────────────────────────────────────────────────────────────
 
@@ -340,7 +327,7 @@ services:
     build: ../../frontend-angular
     container_name: plm-frontend
     ports:
-      - "4200:80"
+      - "127.0.0.1:4200:80"
     depends_on:
       - api-gateway
     restart: unless-stopped
@@ -351,5 +338,3 @@ volumes:
   es_data:
   keycloak_db_data:
   grafana_data:
-  letsencrypt_data:
-  certbot_webroot:

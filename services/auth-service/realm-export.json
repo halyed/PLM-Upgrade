@@ -13,8 +13,8 @@
     {
       "clientId": "plm-frontend",
       "publicClient": true,
-      "redirectUris": ["http://localhost:4200/*"],
-      "webOrigins": ["http://localhost:4200"],
+      "redirectUris": ["http://localhost:4200/*", "https://myplm.duckdns.org/*"],
+      "webOrigins": ["http://localhost:4200", "https://myplm.duckdns.org"],
       "standardFlowEnabled": true,
       "directAccessGrantsEnabled": true
     },

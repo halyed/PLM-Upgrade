@@ -1,6 +1,7 @@
 package com.plm.search;
 
 import com.plm.search.document.ItemDocument;
+import com.plm.search.service.ItemSearchRepository;
 import com.plm.search.service.ReindexService;
 import com.plm.search.service.SearchService;
 import org.junit.jupiter.api.Test;
@@ -29,6 +30,7 @@ class SearchControllerTest {
     @MockBean JwtDecoder jwtDecoder;
     @MockBean SearchService searchService;
     @MockBean ReindexService reindexService;
+    @MockBean ItemSearchRepository itemSearchRepository;
 
     @Test
     void searchItems_returnsResults() throws Exception {

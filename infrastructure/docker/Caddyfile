@@ -1,20 +1,18 @@
-# PLM Platform — Caddyfile
-# Place this on your VPS at /etc/caddy/Caddyfile (or wherever Caddy reads it)
-# Replace YOUR_DOMAIN with your actual DuckDNS domain (e.g. myplm.duckdns.org)
-# Caddy handles HTTPS + Let's Encrypt automatically — no certbot needed.
+# PLM Platform — Caddyfile (Caddy runs as Docker container on "web" network)
+# All PLM services are on the "web" network — use container names, not localhost.
 
-YOUR_DOMAIN {
+myplm.duckdns.org {
 
     # ── Runtime config for Angular (injects Keycloak URL without rebuilding) ──
     handle /env.js {
         header Content-Type application/javascript
         header Cache-Control no-store
-        respond `window.__env = { keycloakUrl: "https://YOUR_DOMAIN/auth" };`
+        respond `window.__env = { keycloakUrl: "https://myplm.duckdns.org/auth" };`
     }
 
     # ── Keycloak (proxied at /auth/) ──────────────────────────────────────────
     handle /auth/* {
-        reverse_proxy localhost:8081 {
+        reverse_proxy plm-auth-service:8080 {
             header_up X-Forwarded-Proto {scheme}
             header_up X-Forwarded-Host  {host}
             header_up X-Real-IP         {remote_host}
@@ -23,27 +21,27 @@ YOUR_DOMAIN {
 
     # ── WebSocket (notifications) ─────────────────────────────────────────────
     handle /ws-notifications* {
-        reverse_proxy localhost:8085 {
+        reverse_proxy plm-notification-service:8085 {
             header_up Upgrade    {>Upgrade}
             header_up Connection {>Connection}
         }
     }
 
     # ── API routes ────────────────────────────────────────────────────────────
-    handle /api/items*          { reverse_proxy localhost:8080 }
-    handle /api/revisions*      { reverse_proxy localhost:8080 }
-    handle /api/change-requests* { reverse_proxy localhost:8080 }
-    handle /api/documents*      { reverse_proxy localhost:8080 }
-    handle /api/audit-logs*     { reverse_proxy localhost:8080 }
-    handle /api/workflows*      { reverse_proxy localhost:8082 }
-    handle /api/search*         { reverse_proxy localhost:8083 }
-    handle /api/integration*    { reverse_proxy localhost:8084 }
-    handle /api/notifications*  { reverse_proxy localhost:8085 }
-    handle /api/reports*        { reverse_proxy localhost:8086 }
-    handle /api/cad*            { reverse_proxy localhost:5000  }
+    handle /api/items*           { reverse_proxy plm-core-service:8080 }
+    handle /api/revisions*       { reverse_proxy plm-core-service:8080 }
+    handle /api/change-requests* { reverse_proxy plm-core-service:8080 }
+    handle /api/documents*       { reverse_proxy plm-core-service:8080 }
+    handle /api/audit-logs*      { reverse_proxy plm-core-service:8080 }
+    handle /api/workflows*       { reverse_proxy plm-workflow-service:8082 }
+    handle /api/search*          { reverse_proxy plm-search-service:8083 }
+    handle /api/integration*     { reverse_proxy plm-integration-service:8084 }
+    handle /api/notifications*   { reverse_proxy plm-notification-service:8085 }
+    handle /api/reports*         { reverse_proxy plm-reporting-service:8086 }
+    handle /api/cad*             { reverse_proxy plm-cad-service:5000 }
 
     # ── Angular frontend (catch-all) ──────────────────────────────────────────
     handle {
-        reverse_proxy localhost:4200
+        reverse_proxy plm-frontend:80
     }
 }

@@ -143,6 +143,9 @@ services:
       - ../../services/auth-service/realm-export.json:/opt/keycloak/data/import/realm-export.json
     ports:
       - "127.0.0.1:8081:8080"
+    networks:
+      - default
+      - web
     depends_on:
       keycloak-db:
         condition: service_healthy
@@ -167,6 +170,9 @@ services:
       CONVERSION_SERVICE_URL: http://cad-service:5000
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       KEYCLOAK_JWK_SET_URI: http://auth-service:8080/realms/plm/protocol/openid-connect/certs
+    networks:
+      - default
+      - web
     depends_on:
       postgres:
         condition: service_healthy
@@ -188,6 +194,9 @@ services:
     container_name: plm-cad-service
     ports:
       - "127.0.0.1:5000:5000"
+    networks:
+      - default
+      - web
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
       interval: 10s
@@ -219,6 +228,9 @@ services:
       KEYCLOAK_JWK_SET_URI: http://auth-service:8080/realms/plm/protocol/openid-connect/certs
       ZEEBE_ADDRESS: camunda:26500
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    networks:
+      - default
+      - web
     depends_on:
       - camunda
       - kafka
@@ -237,6 +249,9 @@ services:
       KEYCLOAK_JWK_SET_URI: http://auth-service:8080/realms/plm/protocol/openid-connect/certs
       ELASTICSEARCH_URIS: elasticsearch:9200
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    networks:
+      - default
+      - web
     depends_on:
       - elasticsearch
       - kafka
@@ -266,6 +281,9 @@ services:
       FREECAD_ENABLED: ${FREECAD_ENABLED:-false}
       FREECAD_URL: ${FREECAD_URL:-http://localhost:8888}
       FREECAD_API_KEY: ${FREECAD_API_KEY:-changeme}
+    networks:
+      - default
+      - web
     depends_on:
       - kafka
       - auth-service
@@ -290,6 +308,9 @@ services:
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USERNAME: ${SMTP_USERNAME:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+    networks:
+      - default
+      - web
     depends_on:
       postgres:
         condition: service_healthy
@@ -308,6 +329,9 @@ services:
     environment:
       KEYCLOAK_JWK_SET_URI: http://auth-service:8080/realms/plm/protocol/openid-connect/certs
       PLM_CORE_URL: http://plm-core-service:8080
+    networks:
+      - default
+      - web
     depends_on:
       - plm-core-service
       - auth-service
@@ -336,9 +360,16 @@ services:
     container_name: plm-frontend
     ports:
       - "127.0.0.1:4200:80"
+    networks:
+      - default
+      - web
     depends_on:
       - plm-core-service
     restart: unless-stopped
+
+networks:
+  web:
+    external: true
 
 volumes:
   postgres_data:

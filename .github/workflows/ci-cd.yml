@@ -194,7 +194,7 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            cd /opt/plm-upgrade
+            cd ~/apps/PLM-Upgrade
             git pull origin main
             docker compose -f infrastructure/docker/docker-compose.yml pull
             docker compose -f infrastructure/docker/docker-compose.yml up -d --remove-orphans

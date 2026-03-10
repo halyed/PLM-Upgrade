@@ -169,7 +169,7 @@ services:
       MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
       CONVERSION_SERVICE_URL: http://cad-service:5000
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      KEYCLOAK_JWK_SET_URI: http://auth-service:8080/realms/plm/protocol/openid-connect/certs
+      KEYCLOAK_JWK_SET_URI: http://auth-service:8080/auth/realms/plm/protocol/openid-connect/certs
     networks:
       - default
       - web
@@ -225,7 +225,7 @@ services:
     ports:
       - "127.0.0.1:8082:8082"
     environment:
-      KEYCLOAK_JWK_SET_URI: http://auth-service:8080/realms/plm/protocol/openid-connect/certs
+      KEYCLOAK_JWK_SET_URI: http://auth-service:8080/auth/realms/plm/protocol/openid-connect/certs
       ZEEBE_ADDRESS: camunda:26500
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     networks:
@@ -246,7 +246,7 @@ services:
     ports:
       - "127.0.0.1:8083:8083"
     environment:
-      KEYCLOAK_JWK_SET_URI: http://auth-service:8080/realms/plm/protocol/openid-connect/certs
+      KEYCLOAK_JWK_SET_URI: http://auth-service:8080/auth/realms/plm/protocol/openid-connect/certs
       ELASTICSEARCH_URIS: elasticsearch:9200
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     networks:
@@ -267,7 +267,7 @@ services:
     ports:
       - "127.0.0.1:8084:8084"
     environment:
-      KEYCLOAK_JWK_SET_URI: http://auth-service:8080/realms/plm/protocol/openid-connect/certs
+      KEYCLOAK_JWK_SET_URI: http://auth-service:8080/auth/realms/plm/protocol/openid-connect/certs
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       # Enable connectors via env vars when credentials are available
       ODOO_ENABLED: ${ODOO_ENABLED:-false}
@@ -301,7 +301,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-plm}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-plm_user}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-plm_pass}
-      KEYCLOAK_JWK_SET_URI: http://auth-service:8080/realms/plm/protocol/openid-connect/certs
+      KEYCLOAK_JWK_SET_URI: http://auth-service:8080/auth/realms/plm/protocol/openid-connect/certs
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       NOTIFICATION_EMAIL_ENABLED: ${NOTIFICATION_EMAIL_ENABLED:-false}
       SMTP_HOST: ${SMTP_HOST:-}
@@ -327,7 +327,7 @@ services:
     ports:
       - "127.0.0.1:8086:8086"
     environment:
-      KEYCLOAK_JWK_SET_URI: http://auth-service:8080/realms/plm/protocol/openid-connect/certs
+      KEYCLOAK_JWK_SET_URI: http://auth-service:8080/auth/realms/plm/protocol/openid-connect/certs
       PLM_CORE_URL: http://plm-core-service:8080
     networks:
       - default

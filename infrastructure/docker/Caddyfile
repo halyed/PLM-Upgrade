@@ -1,13 +1,13 @@
 # PLM Platform — Caddyfile (Caddy runs as Docker container on "web" network)
 # All PLM services are on the "web" network — use container names, not localhost.
 
-myplm.duckdns.org {
+plm.halyed.com {
 
     # ── Runtime config for Angular (injects Keycloak URL without rebuilding) ──
     handle /env.js {
         header Content-Type application/javascript
         header Cache-Control no-store
-        respond `window.__env = { keycloakUrl: "https://myplm.duckdns.org/auth" };`
+        respond `window.__env = { keycloakUrl: "https://plm.halyed.com/auth" };`
     }
 
     # ── Keycloak (proxied at /auth/) ──────────────────────────────────────────
